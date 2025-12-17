@@ -2,11 +2,15 @@
 {
     public class Player
     {
-        private Guid Id;
-        private string Name;
-        private string Color;
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Color { get; set; }
+        public int AvailableTroops { get; set; }
+        public bool IsAlive { get; set; }
 
-        private int AvailableTroops;
-        private bool IsAlive;
+        public Guid GameId { get; set; }
+        public Game Game { get; set; }
+
+        public ICollection<Princedom> Princedoms { get; set; }
     }
 }
