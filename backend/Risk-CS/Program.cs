@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Risk_CS.Services;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<GameService>();
 
 var app = builder.Build();
 
@@ -21,6 +23,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
 
 app.MapControllers();
 

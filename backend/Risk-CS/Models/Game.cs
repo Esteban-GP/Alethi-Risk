@@ -12,5 +12,13 @@
         public int CurrentRound { get; set; } // Numero de rondas que ha habido
         public int NextHighstorm { get; set; } // Rondas restantes para la proxima alta tormenta (Random 1 y 3)
 
+        public Game(Player creator)
+        {
+            GameState = State.WAITING;
+            Players.Add(creator);
+            CurrentPlayerID = creator.Id;
+            CurrentRound = 0;
+            NextHighstorm = 3;
+        }
     }
 }

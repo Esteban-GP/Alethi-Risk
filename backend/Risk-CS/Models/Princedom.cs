@@ -3,6 +3,7 @@
     public class Princedom
     {
         public int Id { get; set; }
+        public int BlueprintID { get; set; }
         public string Name { get; set; }
         public string History { get; set; }
         public int Troops { get; set; }
@@ -16,7 +17,5 @@
 
         public Guid GameID { get; set; }
         public Game Game { get; set; }
-
-        
     }
 }
