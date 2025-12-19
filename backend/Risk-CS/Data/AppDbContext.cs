@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Risk_CS.Models;
 using System;
 
 namespace Risk.Data
@@ -9,5 +10,9 @@ namespace Risk.Data
             : base(options)
         {
         }
+
+        public DbSet<Game> Games { get; set; }
+        public DbSet<Player> Player { get; set; }
+        public DbSet<Princedom> Princedoms { get; set; }
     }
 }

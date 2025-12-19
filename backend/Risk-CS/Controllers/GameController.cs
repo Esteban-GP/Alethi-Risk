@@ -21,5 +21,14 @@ namespace Risk_CS.Controllers
             Game newGame = _gameService.CreateGame(playerDTO);
             return newGame;
         }
+
+        [HttpPost("join/{gameID}")]
+        public Game joinGame(PlayerDTO playerDTO, Guid gameID)
+        {
+            Game game = _gameService.JoinGame(playerDTO, gameID);
+            return game;
+        }
+
+
     }
 }

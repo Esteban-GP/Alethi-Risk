@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Risk.Data;
 using Risk_CS.Services;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// builder.Services.AddDbContext<AppDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).LogTo(Console.WriteLine));
+ builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).LogTo(Console.WriteLine));
 
 
 builder.Services.AddControllers();
