@@ -1,0 +1,67 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Risk_CS.Models;
+using Risk_CS.Services;
+
+namespace Risk_CS.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class GameController : ControllerBase
+    {
+        private readonly GameService _gameService;
+
+        public GameController(GameService gameService)
+        {
+            _gameService = gameService;
+        }
+
+        [HttpGet("get/{gameID}")]
+        public async Task<ActionResult<Game>> GetGame(Guid gameID)
+        {
+            Game newGame = await _gameService.GetGame(gameID);
+            if (newGame == null)
+            {
+                return BadRequest("Could not recieve game.");
+            }
+
+            return Ok(newGame);
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<Game>> CreateGame(PlayerDTO playerDTO)
+        {
+            Game newGame = await _gameService.CreateGame(playerDTO);
+            if (newGame == null)
+            {
+                return BadRequest("Could not create game.");
+        }
+
+            return Ok(newGame);
+        }
+
+        [HttpPost("join/{gameID}")]
+        public async Task<ActionResult<Game>> joinGame(PlayerDTO playerDTO, Guid gameID)
+        {
+            Game game = await _gameService.JoinGame(playerDTO, gameID);
+            if (game == null)
+            {
+                return BadRequest("Could not join game.");
+            }
+            return Ok(game);
+        }
+
+        [HttpPost("start/{gameID}")]
+        public async Task<ActionResult<Game>> StartGame(Guid gameID)
+        {
+            Game game = await _gameService.StartGame(gameID);
+            if (game == null)
+            {
+                return BadRequest("Could not begin the game");
+            }
+
+            return Ok(game);
+        }
+
+
+    }
+}
