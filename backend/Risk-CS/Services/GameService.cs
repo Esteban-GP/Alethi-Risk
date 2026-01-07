@@ -100,10 +100,10 @@ namespace Risk_CS.Services
                 princedom.Player = player;
                 princedom.Troops = 3;
             }
-        
+
             // Assigning available troops for each player
             foreach(Player p in game.Players)
-        {
+            {
                 _playerService.AsignTroops(p);
             }
 
@@ -126,7 +126,7 @@ namespace Risk_CS.Services
 
         
         public async Task<Game> PlaceTroops(Guid ownerGuid, List<PlacementDTO> placementList)
-            {
+        {
             // Getting the game by the playerID given
             Game game = await _context.Games
                             .Include(g => g.Players)
@@ -148,12 +148,12 @@ namespace Risk_CS.Services
 
             // Making sure you own every Princedom
             foreach (PlacementDTO placement in placementList)
-                {
+            {
                 Princedom princedom = game.Princedoms.FirstOrDefault(p => p.Id == placement.PrincedomID);
 
                 if (princedom == null) throw new Exception("Princedom not found");
                 if (princedom.PlayerID != ownerGuid) throw new Exception("You cant place troops on this princedom");
-                }
+            }
 
             // Updating every princedom with the new troops added
             foreach (PlacementDTO placement in placementList)
@@ -172,6 +172,38 @@ namespace Risk_CS.Services
             await _context.SaveChangesAsync();
             return game;
         }
+
+        public async Task<Game> MoveTroops(Guid ownerGuid, MovementDTO movement)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == ownerGuid));
+
+            if (game == null) throw new Exception("Game not found");
+            if (game.CurrentPlayerID != ownerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.MOVING) throw new Exception("You cannot place troops right now");
+
+
+            // Getting the origin and destination Princedoms
+            Princedom? originPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.OriginPrincedomID);
+            Princedom? destinationPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.DestPrincedomID);
+            if (originPrincedom == null || destinationPrincedom == null) throw new Exception("An error ocurred while getting the Princedoms");
+
+            // Checking right amount of troops, ownership of princedoms and them being next to each other
+            if (!_princedomService.CheckFrontier(originPrincedom, destinationPrincedom)) throw new Exception("The princedoms are not neighbours");
+            if (movement.Troops < 0) throw new Exception("You have to move one or more troops");
+            if (movement.Troops > (originPrincedom.Troops - 1)) throw new Exception("You are trying to move more troops than available");
+            if (originPrincedom.PlayerID != ownerGuid) throw new Exception("You dont own the princedom of origin");
+            if (destinationPrincedom.PlayerID != ownerGuid) throw new Exception("You dont own the princedom of destination");
+            
+
+            originPrincedom.Troops -= movement.Troops;
+            destinationPrincedom.Troops += movement.Troops;
+
+            await _context.SaveChangesAsync();
+            return game;
         }
     }
 }
