@@ -7,22 +7,21 @@ namespace Risk_CS.Data
     {
         public int? Id { get; set; }
         public string? Name { get; set; }
-        public List<int> Frontiers { get; set; } = new List<int>();
+        public List<int> Frontiers { get; set; } = [];
     }
 
     public class PrincedomSource
     {
-        public static List<PrincedomBlueprint> Blueprints { get; private set; } = new List<PrincedomBlueprint>();
-
-
+        public static List<PrincedomBlueprint> Blueprints { get; private set; } = [];
+        
         static PrincedomSource()
         {
             try
             {
                 string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Blueprints.json");
                 string jsonString = File.ReadAllText(path);
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                Blueprints = JsonSerializer.Deserialize<List<PrincedomBlueprint>>(jsonString, options);
+                JsonSerializerOptions options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                Blueprints = JsonSerializer.Deserialize<List<PrincedomBlueprint>>(jsonString, options) ?? new List<PrincedomBlueprint>();
             }
             catch (Exception e)
             {

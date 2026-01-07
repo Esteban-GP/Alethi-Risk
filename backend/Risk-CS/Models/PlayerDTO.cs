@@ -1,8 +1,8 @@
 ﻿namespace Risk_CS.Models
 {
-    public class PlayerDTO
+    public class PlayerDTO(string name, string color)
     {
-        public string? Name { get; set; }
-        public string? Color { get; set; }
+        public string Name { get; set; } = name;
+        public string Color { get; set; } = color;
     }
 }

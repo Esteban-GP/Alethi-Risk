@@ -15,18 +15,51 @@ namespace Risk_CS.Controllers
             _gameService = gameService;
         }
 
-        [HttpPost("create")]
-        public Game CreateGame(PlayerDTO playerDTO)
+        [HttpGet("get/{gameID}")]
+        public async Task<ActionResult<Game>> GetGame(Guid gameID)
         {
-            Game newGame = _gameService.CreateGame(playerDTO);
-            return newGame;
+            Game newGame = await _gameService.GetGame(gameID);
+            if (newGame == null)
+            {
+                return BadRequest("Could not recieve game.");
+            }
+
+            return Ok(newGame);
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<Game>> CreateGame(PlayerDTO playerDTO)
+        {
+            Game newGame = await _gameService.CreateGame(playerDTO);
+            if (newGame == null)
+            {
+                return BadRequest("Could not create game.");
+        }
+
+            return Ok(newGame);
         }
 
         [HttpPost("join/{gameID}")]
-        public Game joinGame(PlayerDTO playerDTO, Guid gameID)
+        public async Task<ActionResult<Game>> joinGame(PlayerDTO playerDTO, Guid gameID)
         {
-            Game game = _gameService.JoinGame(playerDTO, gameID);
-            return game;
+            Game game = await _gameService.JoinGame(playerDTO, gameID);
+            if (game == null)
+            {
+                return BadRequest("Could not join game.");
+            }
+            return Ok(game);
+        }
+
+        [HttpPost("start/{gameID}")]
+        public async Task<ActionResult<Game>> StartGame(Guid gameID)
+        {
+            Game game = await _gameService.StartGame(gameID);
+            if (game == null)
+            {
+                return BadRequest("Could not begin the game");
+            }
+
+            return Ok(game);
         }
 
 
