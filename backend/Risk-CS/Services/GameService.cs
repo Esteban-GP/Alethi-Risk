@@ -114,19 +114,64 @@ namespace Risk_CS.Services
             return game;
         }
 
-        public Game JoinGame(PlayerDTO playerDTO, Guid GameID)
+
+        public async Task<bool> CheckFrontiers(Guid p1_id, Guid p2_id)
         {
-            Game actualGame = null;
-            Player player = new Player(playerDTO.Name, playerDTO.Color);
-            foreach (Game game in Games)
+            Princedom p1 = await _context.Princedoms.FirstOrDefaultAsync(princedom => princedom.Id == p1_id);
+            Princedom p2 = await _context.Princedoms.FirstOrDefaultAsync(princedom => princedom.Id == p2_id);
+
+            bool result = _princedomService.CheckFrontier(p1, p2);
+            return result;
+        }
+
+        
+        public async Task<Game> PlaceTroops(Guid ownerGuid, List<PlacementDTO> placementList)
             {
-                if (game.Id.Equals(GameID))
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == ownerGuid));
+
+            if (game == null) throw new Exception("Game not found");
+            if (game.CurrentPlayerID != ownerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.PLACING) throw new Exception("You cannot place troops right now");
+
+            
+            Player player = game.Players.First(p => p.Id == ownerGuid);
+
+            // Getting the summ of all the troops placed
+            int totalTroopsPlaced = placementList.Sum(p => p.Troops);
+
+            if (placementList.Any(p => p.Troops <= 0)) throw new Exception("Cant place 0 or negative troops");
+            if (totalTroopsPlaced > player.AvailableTroops) throw new Exception("You cant place more troops than available");
+
+            // Making sure you own every Princedom
+            foreach (PlacementDTO placement in placementList)
                 {
-                    actualGame = game;
+                Princedom princedom = game.Princedoms.FirstOrDefault(p => p.Id == placement.PrincedomID);
+
+                if (princedom == null) throw new Exception("Princedom not found");
+                if (princedom.PlayerID != ownerGuid) throw new Exception("You cant place troops on this princedom");
                 }
+
+            // Updating every princedom with the new troops added
+            foreach (PlacementDTO placement in placementList)
+            {
+                Princedom princedom = game.Princedoms.FirstOrDefault(p => p.Id == placement.PrincedomID);
+
+                princedom.Troops += placement.Troops;
             }
-            actualGame.Players.Add(player);
-            return actualGame;
+
+            // Updating the available troops left for the player
+            player.AvailableTroops -= totalTroopsPlaced;
+
+            // Setting the Game State as Attacking
+            game.GameState = State.ATTACKING;
+
+            await _context.SaveChangesAsync();
+            return game;
+        }
         }
     }
 }

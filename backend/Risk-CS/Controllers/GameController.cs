@@ -34,7 +34,7 @@ namespace Risk_CS.Controllers
             if (newGame == null)
             {
                 return BadRequest("Could not create game.");
-        }
+            }
 
             return Ok(newGame);
         }
@@ -63,5 +63,16 @@ namespace Risk_CS.Controllers
         }
 
 
+        [HttpPost("placeTroops/{ownerGuid}")]
+        public async Task<ActionResult<Game>> PlaceTroops(List<PlacementDTO> placementList, Guid ownerGuid)
+        {
+            Game game = await _gameService.PlaceTroops(ownerGuid, placementList);
+            if (game == null)
+            {
+                return BadRequest("Could not begin the game");
+            }
+
+            return Ok(game);
+        }
     }
 }
