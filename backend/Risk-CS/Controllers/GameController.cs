@@ -69,7 +69,33 @@ namespace Risk_CS.Controllers
             Game game = await _gameService.PlaceTroops(ownerGuid, placementList);
             if (game == null)
             {
-                return BadRequest("Could not begin the game");
+                return BadRequest("Could not make the placement");
+            }
+
+            return Ok(game);
+        }
+        
+
+        [HttpPost("moveTroops/{ownerGuid}")]
+        public async Task<ActionResult<Game>> MoveTroops(MovementDTO movement, Guid ownerGuid)
+        {
+            Game game = await _gameService.MoveTroops(ownerGuid, movement);
+            if (game == null)
+            {
+                return BadRequest("Could not make the movement");
+            }
+
+            return Ok(game);
+        }
+
+
+        [HttpPost("finishMove/{ownerGuid}")]
+        public async Task<ActionResult<Game>> FinishMoving(Guid ownerGuid)
+        {
+            Game game = await _gameService.FinishMoving(ownerGuid);
+            if (game == null)
+            {
+                return BadRequest("Could not finish the movement");
             }
 
             return Ok(game);

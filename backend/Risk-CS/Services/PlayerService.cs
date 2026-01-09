@@ -14,7 +14,7 @@ namespace Risk_CS.Services
         public void AsignTroops(Player player)
         {
             // This returns an int even when result is decimal
-            player.AvailableTroops = player.Princedoms.Count/2;
+            player.AvailableTroops += player.Princedoms.Count/2;
         }
     }
 }

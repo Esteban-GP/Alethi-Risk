@@ -101,11 +101,20 @@ namespace Risk_CS.Services
                 princedom.Troops = 3;
             }
 
+
             // Assigning available troops for each player
-            foreach(Player p in game.Players)
+            int troops = game.Players.Count switch
             {
-                _playerService.AsignTroops(p);
+                2 or 3 => 2,
+                4 => 1,
+                _ => 0
+            };
+
+            foreach (Player p in game.Players)
+            {
+                p.AvailableTroops = troops;
             }
+
 
             // Setting the Game State as Placing
             game.GameState = State.PLACING;
@@ -181,15 +190,15 @@ namespace Risk_CS.Services
                             .Include(g => g.Princedoms)
                             .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == ownerGuid));
 
-            if (game == null) throw new Exception("Game not found");
+            if (game == null) throw new Exception($"Game not found");
             if (game.CurrentPlayerID != ownerGuid) throw new Exception("Its not your turn to play");
             if (game.GameState != State.MOVING) throw new Exception("You cannot place troops right now");
 
 
             // Getting the origin and destination Princedoms
-            Princedom? originPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.OriginPrincedomID);
-            Princedom? destinationPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.DestPrincedomID);
-            if (originPrincedom == null || destinationPrincedom == null) throw new Exception("An error ocurred while getting the Princedoms");
+            Princedom originPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.OriginPrincedomID);
+            Princedom destinationPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.DestPrincedomID);
+            if (originPrincedom == null || destinationPrincedom == null) throw new Exception($"An error ocurred while getting the Princedoms");
 
             // Checking right amount of troops, ownership of princedoms and them being next to each other
             if (!_princedomService.CheckFrontier(originPrincedom, destinationPrincedom)) throw new Exception("The princedoms are not neighbours");
@@ -201,6 +210,49 @@ namespace Risk_CS.Services
 
             originPrincedom.Troops -= movement.Troops;
             destinationPrincedom.Troops += movement.Troops;
+
+            await _context.SaveChangesAsync();
+            return game;
+        }
+
+        public async Task<Game> FinishMoving(Guid playerGuid)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerGuid));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.CurrentPlayerID != playerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.MOVING) throw new Exception("You cannot place troops right now");
+
+            // Setting the CurrentPlayerID as the next player's ID 
+            int currentIndex = game.Players.FindIndex(p => p.Id == playerGuid);
+            int nextIndex = (currentIndex + 1) % game.Players.Count;
+
+            game.CurrentPlayerID = game.Players[nextIndex].Id;
+
+            // Assigning his troops
+            _playerService.AsignTroops(game.Players[nextIndex]);
+
+
+            // Calculating the next Highstorm
+            game.NextHighstorm--;
+            if (game.NextHighstorm == 0)
+            {
+                foreach(Princedom p in game.Princedoms)
+                {
+                    if (p.Troops > 1)
+                    {
+                        p.Troops--;
+                    }
+                }
+            }
+
+
+            // Changing the GameState for the next player
+            game.GameState = State.PLACING;
 
             await _context.SaveChangesAsync();
             return game;
