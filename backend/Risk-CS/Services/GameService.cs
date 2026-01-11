@@ -100,12 +100,21 @@ namespace Risk_CS.Services
                 princedom.Player = player;
                 princedom.Troops = 3;
             }
-        
+
+
             // Assigning available troops for each player
-            foreach(Player p in game.Players)
-        {
-                _playerService.AsignTroops(p);
+            int troops = game.Players.Count switch
+            {
+                2 or 3 => 2,
+                4 => 1,
+                _ => 0
+            };
+
+            foreach (Player p in game.Players)
+            {
+                p.AvailableTroops = troops;
             }
+
 
             // Setting the Game State as Placing
             game.GameState = State.PLACING;
@@ -114,19 +123,244 @@ namespace Risk_CS.Services
             return game;
         }
 
-        public Game JoinGame(PlayerDTO playerDTO, Guid GameID)
+
+        public async Task<bool> CheckFrontiers(Guid p1_id, Guid p2_id)
         {
-            Game actualGame = null;
-            Player player = new Player(playerDTO.Name, playerDTO.Color);
-            foreach (Game game in Games)
+            Princedom p1 = await _context.Princedoms.FirstOrDefaultAsync(princedom => princedom.Id == p1_id);
+            Princedom p2 = await _context.Princedoms.FirstOrDefaultAsync(princedom => princedom.Id == p2_id);
+
+            bool result = _princedomService.CheckFrontier(p1, p2);
+            return result;
+        }
+
+        
+        public async Task<Game> PlaceTroops(Guid ownerGuid, List<PlacementDTO> placementList)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == ownerGuid));
+
+            if (game == null) throw new Exception("Game not found");
+            if (game.CurrentPlayerID != ownerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.PLACING) throw new Exception("You cannot place troops right now");
+
+            
+            Player player = game.Players.First(p => p.Id == ownerGuid);
+
+            // Getting the summ of all the troops placed
+            int totalTroopsPlaced = placementList.Sum(p => p.Troops);
+
+            if (placementList.Any(p => p.Troops <= 0)) throw new Exception("Cant place 0 or negative troops");
+            if (totalTroopsPlaced > player.AvailableTroops) throw new Exception("You cant place more troops than available");
+
+            // Making sure you own every Princedom
+            foreach (PlacementDTO placement in placementList)
             {
-                if (game.Id.Equals(GameID))
+                Princedom princedom = game.Princedoms.FirstOrDefault(p => p.Id == placement.PrincedomID);
+
+                if (princedom == null) throw new Exception("Princedom not found");
+                if (princedom.PlayerID != ownerGuid) throw new Exception("You cant place troops on this princedom");
+            }
+
+            // Updating every princedom with the new troops added
+            foreach (PlacementDTO placement in placementList)
+            {
+                Princedom princedom = game.Princedoms.FirstOrDefault(p => p.Id == placement.PrincedomID);
+
+                princedom.Troops += placement.Troops;
+            }
+
+            // Updating the available troops left for the player
+            player.AvailableTroops -= totalTroopsPlaced;
+
+            // Setting the Game State as Attacking
+            game.GameState = State.ATTACKING;
+
+            await _context.SaveChangesAsync();
+            return game;
+        }
+
+        public async Task<Game> MoveTroops(Guid ownerGuid, MovementDTO movement)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == ownerGuid));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.CurrentPlayerID != ownerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.MOVING) throw new Exception("You cannot place troops right now");
+
+
+            // Getting the origin and destination Princedoms
+            Princedom originPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.OriginPrincedomID);
+            Princedom destinationPrincedom = game.Princedoms.FirstOrDefault(p => p.Id == movement.DestPrincedomID);
+            if (originPrincedom == null || destinationPrincedom == null) throw new Exception($"An error ocurred while getting the Princedoms");
+
+            // Checking right amount of troops, ownership of princedoms and them being next to each other
+            if (!_princedomService.CheckFrontier(originPrincedom, destinationPrincedom)) throw new Exception("The princedoms are not neighbours");
+            if (movement.Troops < 0) throw new Exception("You have to move one or more troops");
+            if (movement.Troops > (originPrincedom.Troops - 1)) throw new Exception("You are trying to move more troops than available");
+            if (originPrincedom.PlayerID != ownerGuid) throw new Exception("You dont own the princedom of origin");
+            if (destinationPrincedom.PlayerID != ownerGuid) throw new Exception("You dont own the princedom of destination");
+            
+
+            originPrincedom.Troops -= movement.Troops;
+            destinationPrincedom.Troops += movement.Troops;
+
+            await _context.SaveChangesAsync();
+            return game;
+        }
+
+        public async Task<Game> FinishMoving(Guid playerGuid)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerGuid));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.CurrentPlayerID != playerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.MOVING) throw new Exception("You cannot place troops right now");
+
+            // Setting the CurrentPlayerID as the next player's ID 
+            int currentIndex = game.Players.FindIndex(p => p.Id == playerGuid);
+            int nextIndex = (currentIndex + 1) % game.Players.Count;
+
+            game.CurrentPlayerID = game.Players[nextIndex].Id;
+
+            // Assigning his troops
+            _playerService.AsignTroops(game.Players[nextIndex]);
+
+
+            // Calculating the next Highstorm
+            game.NextHighstorm--;
+            if (game.NextHighstorm == 0)
+            {
+                foreach(Princedom p in game.Princedoms)
                 {
-                    actualGame = game;
+                    if (p.Troops > 1)
+                    {
+                        p.Troops--;
+                    }
                 }
             }
-            actualGame.Players.Add(player);
-            return actualGame;
+
+
+            // Changing the GameState for the next player
+            game.GameState = State.PLACING;
+
+            await _context.SaveChangesAsync();
+            return game;
+        }
+
+
+        public async Task<AttackResultDTO> AttackPrincedom(Guid attackerGuid, AttackDTO attack)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == attackerGuid));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.CurrentPlayerID != attackerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.ATTACKING) throw new Exception("You cannot place troops right now");
+
+
+            // Getting the origin and destination Princedoms
+            Princedom attacking = game.Princedoms.First(p => p.Id == attack.AttackingPrincedomId);
+            Princedom defending = game.Princedoms.First(p => p.Id == attack.DefendingPrincedomId);
+            if (attacking == null || defending == null) throw new Exception($"An error ocurred while getting the Princedoms");
+            if (attacking.Troops <= 1) throw new Exception("You must have 2 or more troops to attack");
+            if (attacking.PlayerID != attackerGuid) throw new Exception("You dont own the princedom of origin");
+            if (defending.PlayerID == attackerGuid) throw new Exception("You cant attack your own princedom");
+
+            // Calculate dice quantity based on troop amounts
+            int numDiceAtk = Math.Min(3, attacking.Troops - 1);
+            int numDiceDef = Math.Min(2, defending.Troops);
+
+
+            // Creating the dice list for both sides
+            List<int> diceAtk = RollDiceList(numDiceAtk);
+            List<int> diceDef = RollDiceList(numDiceDef);
+
+            int lossAtk = 0;
+            int lossDef = 0;
+
+
+            // Comparing both lists to determine the amount of troops lost on each side
+            int comparaciones = Math.Min(diceAtk.Count, diceDef.Count);
+            for (int i = 0; i < comparaciones; i++)
+            {
+                if (diceAtk[i] > diceDef[i])
+                    lossDef++;
+                else
+                    lossAtk++;
+            }
+
+            // Deduct troops lost
+            attacking.Troops -= lossAtk;
+            defending.Troops -= lossDef;
+
+
+            // Set the new owner if the princedom is conquererd
+            if (defending.Troops <= 0)
+            {
+                defending.PlayerID = attackerGuid;
+                attacking.Troops -= numDiceAtk;
+                defending.Troops = numDiceAtk;
+            }
+
+            CheckEliminatedPlayers(game);
+
+            // Creating returningDTO with the attack data
+            AttackResultDTO resultDTO = new AttackResultDTO
+            {
+                UpdatedGame = game,
+                AttackerDice = diceAtk,
+                DefenderDice = diceDef,
+                AttackingPrincedomId = attack.AttackingPrincedomId,
+                DefendingPrincedomId = attack.DefendingPrincedomId
+            };
+
+            await _context.SaveChangesAsync();
+            return resultDTO;
+        }
+
+        // Randomize the amount of dice given and return it ordered from high to low
+        private static List<int> RollDiceList(int count)
+        {
+            Random rng = new Random();
+            List<int> dice = new List<int>();
+            for (int i = 0; i < count; i++) dice.Add(rng.Next(1, 7));
+            return dice.OrderByDescending(d => d).ToList();
+        }
+
+        // Method that checks if any of the players is dead
+        private void CheckEliminatedPlayers(Game game)
+        {
+            var playersToCheck = game.Players.ToList();
+
+            foreach (var player in playersToCheck)
+            {
+                bool isAlive = game.Princedoms.Any(p => p.PlayerID == player.Id);
+
+                if (!isAlive)
+                {
+                    game.Players.Remove(player);
+                }
+                
+
+                if(game.Players.Count == 0)
+                {
+                    game.GameState = State.FINISHED;
+                }
+            }
         }
     }
 }
