@@ -100,5 +100,13 @@ namespace Risk_CS.Controllers
 
             return Ok(game);
         }
+
+        [HttpPost("attack/{ownerGuid}")]
+        public async Task<ActionResult<AttackResultDTO>> AttackPrincedom(Guid ownerGuid, AttackDTO attack)
+        {
+            AttackResultDTO result = await _gameService.AttackPrincedom(ownerGuid, attack);
+            if (result == null) return BadRequest("There was an error with your attack");
+            return Ok(result);
+        }
     }
 }

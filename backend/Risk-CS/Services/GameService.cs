@@ -257,5 +257,110 @@ namespace Risk_CS.Services
             await _context.SaveChangesAsync();
             return game;
         }
+
+
+        public async Task<AttackResultDTO> AttackPrincedom(Guid attackerGuid, AttackDTO attack)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == attackerGuid));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.CurrentPlayerID != attackerGuid) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.ATTACKING) throw new Exception("You cannot place troops right now");
+
+
+            // Getting the origin and destination Princedoms
+            Princedom attacking = game.Princedoms.First(p => p.Id == attack.AttackingPrincedomId);
+            Princedom defending = game.Princedoms.First(p => p.Id == attack.DefendingPrincedomId);
+            if (attacking == null || defending == null) throw new Exception($"An error ocurred while getting the Princedoms");
+            if (attacking.Troops <= 1) throw new Exception("You must have 2 or more troops to attack");
+            if (attacking.PlayerID != attackerGuid) throw new Exception("You dont own the princedom of origin");
+            if (defending.PlayerID == attackerGuid) throw new Exception("You cant attack your own princedom");
+
+            // Calculate dice quantity based on troop amounts
+            int numDiceAtk = Math.Min(3, attacking.Troops - 1);
+            int numDiceDef = Math.Min(2, defending.Troops);
+
+
+            // Creating the dice list for both sides
+            List<int> diceAtk = RollDiceList(numDiceAtk);
+            List<int> diceDef = RollDiceList(numDiceDef);
+
+            int lossAtk = 0;
+            int lossDef = 0;
+
+
+            // Comparing both lists to determine the amount of troops lost on each side
+            int comparaciones = Math.Min(diceAtk.Count, diceDef.Count);
+            for (int i = 0; i < comparaciones; i++)
+            {
+                if (diceAtk[i] > diceDef[i])
+                    lossDef++;
+                else
+                    lossAtk++;
+            }
+
+            // Deduct troops lost
+            attacking.Troops -= lossAtk;
+            defending.Troops -= lossDef;
+
+
+            // Set the new owner if the princedom is conquererd
+            if (defending.Troops <= 0)
+            {
+                defending.PlayerID = attackerGuid;
+                attacking.Troops -= numDiceAtk;
+                defending.Troops = numDiceAtk;
+            }
+
+            CheckEliminatedPlayers(game);
+
+            // Creating returningDTO with the attack data
+            AttackResultDTO resultDTO = new AttackResultDTO
+            {
+                UpdatedGame = game,
+                AttackerDice = diceAtk,
+                DefenderDice = diceDef,
+                AttackingPrincedomId = attack.AttackingPrincedomId,
+                DefendingPrincedomId = attack.DefendingPrincedomId
+            };
+
+            await _context.SaveChangesAsync();
+            return resultDTO;
+        }
+
+        // Randomize the amount of dice given and return it ordered from high to low
+        private static List<int> RollDiceList(int count)
+        {
+            Random rng = new Random();
+            List<int> dice = new List<int>();
+            for (int i = 0; i < count; i++) dice.Add(rng.Next(1, 7));
+            return dice.OrderByDescending(d => d).ToList();
+        }
+
+        // Method that checks if any of the players is dead
+        private void CheckEliminatedPlayers(Game game)
+        {
+            var playersToCheck = game.Players.ToList();
+
+            foreach (var player in playersToCheck)
+            {
+                bool isAlive = game.Princedoms.Any(p => p.PlayerID == player.Id);
+
+                if (!isAlive)
+                {
+                    game.Players.Remove(player);
+                }
+                
+
+                if(game.Players.Count == 0)
+                {
+                    game.GameState = State.FINISHED;
+                }
+            }
+        }
     }
 }
