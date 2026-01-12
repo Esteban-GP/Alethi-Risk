@@ -108,5 +108,17 @@ namespace Risk_CS.Controllers
             if (result == null) return BadRequest("There was an error with your attack");
             return Ok(result);
         }
+
+
+        [HttpPost("attack/finish/{playerID}")]
+        public async Task<ActionResult<Game>> FinishAttacking(Guid playerID)
+        {
+            Game game = await _gameService.FinishAttacking(playerID);
+            if (game == null)
+            {
+                return BadRequest("Could not finish attacking");
+            }
+            return Ok(game);
+        }
     }
 }

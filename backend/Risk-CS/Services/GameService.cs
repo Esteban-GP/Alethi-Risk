@@ -344,9 +344,9 @@ namespace Risk_CS.Services
         // Method that checks if any of the players is dead
         private void CheckEliminatedPlayers(Game game)
         {
-            var playersToCheck = game.Players.ToList();
+            List<Player> playersToCheck = game.Players.ToList();
 
-            foreach (var player in playersToCheck)
+            foreach (Player player in playersToCheck)
             {
                 bool isAlive = game.Princedoms.Any(p => p.PlayerID == player.Id);
 
@@ -361,6 +361,24 @@ namespace Risk_CS.Services
                     game.GameState = State.FINISHED;
                 }
             }
+        }
+
+        public async Task<Game> FinishAttacking(Guid playerID)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerID));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.CurrentPlayerID != playerID) throw new Exception("Its not your turn to play");
+            if (game.GameState != State.ATTACKING) throw new Exception("You cannot place troops right now");
+
+            game.GameState = State.MOVING;
+
+            await _context.SaveChangesAsync();
+            return game;
         }
     }
 }
