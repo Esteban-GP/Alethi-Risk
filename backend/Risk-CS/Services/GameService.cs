@@ -49,7 +49,7 @@ namespace Risk_CS.Services
             return game;
         }
 
-        public async Task<Game> JoinGame(PlayerDTO playerDTO, Guid GameID)
+        public async Task<JoinResultDTO> JoinGame(PlayerDTO playerDTO, Guid GameID)
         {
             Game game = await _context.Games
                                 .Include(game => game.Players)
@@ -66,7 +66,12 @@ namespace Risk_CS.Services
 
 
             await _context.SaveChangesAsync();
-            return game;
+            JoinResultDTO resultDTO = new JoinResultDTO(game, newPlayer)
+            {
+                Game = game,
+                Player = newPlayer
+            };
+            return resultDTO;
 
         }
 

@@ -40,14 +40,14 @@ namespace Risk_CS.Controllers
         }
 
         [HttpPost("join/{gameID}")]
-        public async Task<ActionResult<Game>> joinGame(PlayerDTO playerDTO, Guid gameID)
+        public async Task<ActionResult<JoinResultDTO>> joinGame(PlayerDTO playerDTO, Guid gameID)
         {
-            Game game = await _gameService.JoinGame(playerDTO, gameID);
-            if (game == null)
+            JoinResultDTO result = await _gameService.JoinGame(playerDTO, gameID);
+            if (result == null)
             {
                 return BadRequest("Could not join game.");
             }
-            return Ok(game);
+            return Ok(result);
         }
 
         [HttpPost("start/{gameID}")]
