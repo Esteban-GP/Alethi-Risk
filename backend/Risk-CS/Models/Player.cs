@@ -1,4 +1,6 @@
-﻿namespace Risk_CS.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Risk_CS.Models
 {
     public class Player
     {
@@ -17,6 +19,7 @@
 
         public Guid? GameId { get; set; }
 
+        [JsonIgnore]
         public ICollection<Princedom> Princedoms { get; set; } = new List<Princedom>();
 
     }

@@ -29,6 +29,17 @@ namespace Risk_CS.Services
             return game;
         }
 
+        public async Task<List<Game>> GetWaitingGames()
+        {
+            List<Game> games = await _context.Games
+                                .Include(game => game.Players)
+                                .Where(game => game.GameState == State.WAITING )
+                                .ToListAsync();
+            if (games == null) throw new Exception("Game not found");
+
+            return games;
+        }
+
 
         public async Task<Game> CreateGame(PlayerDTO creatorDTO)
         {
