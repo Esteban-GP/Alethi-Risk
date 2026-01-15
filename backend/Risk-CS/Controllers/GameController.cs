@@ -15,6 +15,18 @@ namespace Risk_CS.Controllers
             _gameService = gameService;
         }
 
+        [HttpGet("getWaiting")]
+        public async Task<ActionResult<List<Game>>> GetGame()
+        {
+            List<Game> games = await _gameService.GetWaitingGames();
+            if (games == null)
+            {
+                return BadRequest("Could not recieve game.");
+            }
+
+            return Ok(games);
+        }
+
         [HttpGet("get/{gameID}")]
         public async Task<ActionResult<Game>> GetGame(Guid gameID)
         {
