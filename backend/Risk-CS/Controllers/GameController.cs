@@ -52,12 +52,34 @@ namespace Risk_CS.Controllers
         }
 
         [HttpPost("join/{gameID}")]
-        public async Task<ActionResult<JoinResultDTO>> joinGame(PlayerDTO playerDTO, Guid gameID)
+        public async Task<ActionResult<JoinResultDTO>> JoinGame(PlayerDTO playerDTO, Guid gameID)
         {
             JoinResultDTO result = await _gameService.JoinGame(playerDTO, gameID);
             if (result == null)
             {
                 return BadRequest("Could not join game.");
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("leave/{gameID}")]
+        public async Task<ActionResult<Game>> LeaveGame(Guid playerID)
+        {
+            Game result = await _gameService.LeaveGame(playerID);
+            if (result == null)
+            {
+                return BadRequest("Could not leave the game.");
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("leaveLobby/{gameID}")]
+        public async Task<ActionResult<Game>> LeaveLobby(Guid playerID)
+        {
+            Game result = await _gameService.LeaveLobby(playerID);
+            if (result == null)
+            {
+                return BadRequest("Could not leave the lobby.");
             }
             return Ok(result);
         }

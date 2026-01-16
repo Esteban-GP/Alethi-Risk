@@ -12,7 +12,20 @@ namespace Risk_CS.Hubs
         {
             _gameService = gameService;
         }
-            
+
+        public override async Task OnConnectedAsync()
+        {
+            var httpContext = Context.GetHttpContext();
+            var gameId = httpContext.Request.Query["gameId"];
+
+            if (!string.IsNullOrEmpty(gameId))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+            }
+
+            await base.OnConnectedAsync();
+        }
+
         public async Task RequestGame(Guid gameId)
         {
             try

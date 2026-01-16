@@ -2,6 +2,7 @@
 using Risk.Data;
 using Risk_CS.Models;
 using System;
+using System.Numerics;
 
 namespace Risk_CS.Services
 {
@@ -84,6 +85,39 @@ namespace Risk_CS.Services
             };
             return resultDTO;
 
+        }
+
+        public async Task<Game> LeaveLobby(Guid playerID)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerID));
+
+            if (game == null) throw new Exception($"Game not found");
+
+            game.Players.RemoveAll(p => p.Id == playerID);
+            await _context.SaveChangesAsync();
+            return game;
+        }
+
+        public async Task<Game> LeaveGame(Guid playerID)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerID));
+
+            if (game == null) throw new Exception($"Game not found");
+
+            // Setting the player as not alive so his turn is skipped
+            Player player = game.Players.First(p => p.Id == playerID);
+            player.IsAlive = false;
+
+            await _context.SaveChangesAsync();
+            return game;
         }
 
         public async Task<Game> StartGame(Guid GameID)
@@ -248,6 +282,14 @@ namespace Risk_CS.Services
             int nextIndex = (currentIndex + 1) % game.Players.Count;
 
             game.CurrentPlayerID = game.Players[nextIndex].Id;
+
+            // Skipping eliminated players
+            Player player = game.Players.First(p => p.Id == game.CurrentPlayerID);
+            if (player.IsAlive == false)
+            {
+                nextIndex = (nextIndex + 1) % game.Players.Count;
+                game.CurrentPlayerID = game.Players[nextIndex].Id;
+            }
 
             // Assigning his troops
             _playerService.AsignTroops(game.Players[nextIndex]);
