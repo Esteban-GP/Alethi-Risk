@@ -121,12 +121,28 @@ namespace Risk_CS.Services
                             .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerID));
 
             if (game == null) throw new Exception($"Game not found");
+            if (game.GameState != State.WAITING) throw new Exception("Cannot leave a game that has already started");
 
-            game.Players.RemoveAll(p => p.Id == playerID);
-            await _context.SaveChangesAsync();
-            await _hubContext.Clients.Group(game.Id.ToString())
+            if (game.CurrentPlayerID == playerID)
+            {
+                int currentIndex = game.Players.FindIndex(p => p.Id == playerID);
+                int nextIndex = (currentIndex + 1) % game.Players.Count;
+
+                game.CurrentPlayerID = game.Players[nextIndex].Id;
+            }
+
+            if(game.Players.Count == 1)
+            {
+                DeleteGame(game.Id);
+            } else
+            {
+                game.Players.RemoveAll(p => p.Id == playerID);
+                await _hubContext.Clients.Group(game.Id.ToString())
                 .SendAsync("ReceiveGame", game);
+            }
 
+                
+            await _context.SaveChangesAsync();
             return game;
         }
 
@@ -140,13 +156,37 @@ namespace Risk_CS.Services
 
             if (game == null) throw new Exception($"Game not found");
 
-            // Setting the player as not alive so his turn is skipped
-            Player player = game.Players.First(p => p.Id == playerID);
-            player.IsAlive = false;
+            int aliveCount = game.Players.Count(p => p.IsAlive);
+            if (aliveCount < 2)
+            {
+                game.GameState = State.FINISHED;
+            }
+            else
+            {
+                if (game.CurrentPlayerID == playerID)
+                {
+                    int currentIndex = game.Players.FindIndex(p => p.Id == playerID);
 
-            await _context.SaveChangesAsync();
-            await _hubContext.Clients.Group(game.Id.ToString())
-                .SendAsync("ReceiveGame", game);
+
+                    for (int i = 1; i < game.Players.Count; i++)
+                    {
+                        int nextIndex = (currentIndex + i) % game.Players.Count;
+                        var candidate = game.Players[nextIndex];
+
+                        if (candidate.IsAlive)
+                        {
+                            game.CurrentPlayerID = candidate.Id;
+
+                            game.GameState = State.PLACING;
+                            break;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await _hubContext.Clients.Group(game.Id.ToString())
+                    .SendAsync("ReceiveGame", game);
+            }
 
             return game;
         }
@@ -319,11 +359,12 @@ namespace Risk_CS.Services
             game.CurrentPlayerID = game.Players[nextIndex].Id;
 
             // Skipping eliminated players
-            Player player = game.Players.First(p => p.Id == game.CurrentPlayerID);
-            if (player.IsAlive == false)
+            Player nextPlayer = game.Players.First(p => p.Id == game.CurrentPlayerID);
+            while (nextPlayer.IsAlive == false)
             {
                 nextIndex = (nextIndex + 1) % game.Players.Count;
                 game.CurrentPlayerID = game.Players[nextIndex].Id;
+                nextPlayer = game.Players.First(p => p.Id == game.CurrentPlayerID);
             }
 
             // Assigning his troops

@@ -80,7 +80,7 @@ namespace Risk_CS.Controllers
         }
 
 
-        [HttpPost("leave/{gameID}")]
+        [HttpPost("leave/{playerID}")]
         public async Task<ActionResult<Game>> LeaveGame(Guid playerID)
         {
             Game result = await _gameService.LeaveGame(playerID);
@@ -91,7 +91,7 @@ namespace Risk_CS.Controllers
             return Ok(result);
         }
 
-        [HttpPost("leaveLobby/{gameID}")]
+        [HttpPost("leaveLobby/{playerID}")]
         public async Task<ActionResult<Game>> LeaveLobby(Guid playerID)
         {
             Game result = await _gameService.LeaveLobby(playerID);
