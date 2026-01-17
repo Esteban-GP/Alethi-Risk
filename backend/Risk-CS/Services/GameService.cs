@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Risk.Data;
+using Risk_CS.Hubs;
 using Risk_CS.Models;
 using System;
 using System.Numerics;
@@ -11,12 +13,14 @@ namespace Risk_CS.Services
         private readonly AppDbContext _context;
         private readonly PlayerService _playerService;
         private readonly PrincedomService _princedomService;
+        private readonly IHubContext<RiskHub> _hubContext;
 
-        public GameService(AppDbContext context, PlayerService playerService, PrincedomService princedomService)
+        public GameService(AppDbContext context, PlayerService playerService, PrincedomService princedomService, IHubContext<RiskHub> hubContext)
         {
             _context = context;
             _playerService = playerService;
             _princedomService = princedomService;
+            _hubContext = hubContext;
         }
 
         public async Task<Game> GetGame(Guid GameID)
@@ -58,7 +62,25 @@ namespace Risk_CS.Services
 
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
+        }
+
+        public async void DeleteGame(Guid gameId)
+        {
+            var game = _context.Games
+                .Include(g => g.Players)
+                .Include(g => g.Princedoms)
+                .First(g => g.Id == gameId);
+
+            _context.Player.RemoveRange(game.Players);
+            _context.Princedoms.RemoveRange(game.Princedoms);
+            _context.Games.Remove(game);
+
+            _context.SaveChanges();
         }
 
         public async Task<JoinResultDTO> JoinGame(PlayerDTO playerDTO, Guid GameID)
@@ -78,6 +100,9 @@ namespace Risk_CS.Services
 
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             JoinResultDTO resultDTO = new JoinResultDTO(game, newPlayer)
             {
                 Game = game,
@@ -99,6 +124,9 @@ namespace Risk_CS.Services
 
             game.Players.RemoveAll(p => p.Id == playerID);
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -117,6 +145,9 @@ namespace Risk_CS.Services
             player.IsAlive = false;
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -170,6 +201,9 @@ namespace Risk_CS.Services
             game.GameState = State.PLACING;
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -229,6 +263,7 @@ namespace Risk_CS.Services
             game.GameState = State.ATTACKING;
 
             await _context.SaveChangesAsync();
+
             return game;
         }
 

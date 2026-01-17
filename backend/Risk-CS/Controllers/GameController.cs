@@ -48,7 +48,19 @@ namespace Risk_CS.Controllers
                 return BadRequest("Could not create game.");
             }
 
-            return Ok(newGame);
+            return Ok(new
+            {
+                gameId = newGame.Id,
+                myPlayerId = newGame.Players[0].Id,
+                newGame
+            });
+        }
+
+        [HttpDelete("delete/{gameID}")]
+        public async Task<ActionResult<String>> DeleteGame(Guid gameID)
+        {
+            _gameService.DeleteGame(gameID);
+            return Ok("Game deleted");
         }
 
         [HttpPost("join/{gameID}")]
@@ -59,8 +71,14 @@ namespace Risk_CS.Controllers
             {
                 return BadRequest("Could not join game.");
             }
-            return Ok(result);
+            return Ok(new
+            {
+                gameId = result.Game.Id,
+                myPlayerId = result.Player.Id,
+                result
+            });
         }
+
 
         [HttpPost("leave/{gameID}")]
         public async Task<ActionResult<Game>> LeaveGame(Guid playerID)

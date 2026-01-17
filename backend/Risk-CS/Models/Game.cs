@@ -1,6 +1,6 @@
 ﻿namespace Risk_CS.Models
 {
-    public class Game()
+    public class Game
     {
         public Guid Id { get; set; } = Guid.NewGuid(); // Identificador unico de la partida
         public State GameState { get; set; } = State.WAITING; // Enumerador del estado actual  (WAITING, PLACING, ATTACKING, MOVING, FINISHED)
