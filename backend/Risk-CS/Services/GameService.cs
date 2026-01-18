@@ -207,7 +207,7 @@ namespace Risk_CS.Services
             Random random = new Random();
 
             // Setting the first Highstorm
-            game.NextHighstorm = random.Next(1, 3);
+            game.NextHighstorm = random.Next(4, 6);
 
 
             // Assigning princedoms to players randomly
@@ -304,6 +304,9 @@ namespace Risk_CS.Services
 
             await _context.SaveChangesAsync();
 
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -337,6 +340,10 @@ namespace Risk_CS.Services
             destinationPrincedom.Troops += movement.Troops;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -370,7 +377,7 @@ namespace Risk_CS.Services
             // Assigning his troops
             _playerService.AsignTroops(game.Players[nextIndex]);
 
-
+            bool stormHappened = false;
             // Calculating the next Highstorm
             game.NextHighstorm--;
             if (game.NextHighstorm == 0)
@@ -382,13 +389,23 @@ namespace Risk_CS.Services
                         p.Troops--;
                     }
                 }
+                stormHappened = true;
             }
 
+            Random random = new Random();
+            game.NextHighstorm = random.Next(4, 6);
 
             // Changing the GameState for the next player
             game.GameState = State.PLACING;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveHighStorm", game);
+
             return game;
         }
 
@@ -441,13 +458,14 @@ namespace Risk_CS.Services
             attacking.Troops -= lossAtk;
             defending.Troops -= lossDef;
 
-
+            bool conquered = false;
             // Set the new owner if the princedom is conquererd
             if (defending.Troops <= 0)
             {
                 defending.PlayerID = attackerGuid;
                 attacking.Troops -= numDiceAtk;
                 defending.Troops = numDiceAtk;
+                conquered = true;
             }
 
             CheckEliminatedPlayers(game);
@@ -458,11 +476,22 @@ namespace Risk_CS.Services
                 UpdatedGame = game,
                 AttackerDice = diceAtk,
                 DefenderDice = diceDef,
+                AttackerLost = lossAtk,
+                DeffenderLost = lossDef,
                 AttackingPrincedomId = attack.AttackingPrincedomId,
-                DefendingPrincedomId = attack.DefendingPrincedomId
+                DefendingPrincedomId = attack.DefendingPrincedomId,
+                Conquered = conquered,
+
             };
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("RecieveAttack", resultDTO);
+
             return resultDTO;
         }
 
@@ -512,6 +541,10 @@ namespace Risk_CS.Services
             game.GameState = State.MOVING;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
     }
