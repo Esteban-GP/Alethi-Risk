@@ -1,7 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Risk.Data;
+using Risk_CS.Hubs;
 using Risk_CS.Models;
 using System;
+using System.Numerics;
 
 namespace Risk_CS.Services
 {
@@ -10,12 +13,14 @@ namespace Risk_CS.Services
         private readonly AppDbContext _context;
         private readonly PlayerService _playerService;
         private readonly PrincedomService _princedomService;
+        private readonly IHubContext<RiskHub> _hubContext;
 
-        public GameService(AppDbContext context, PlayerService playerService, PrincedomService princedomService)
+        public GameService(AppDbContext context, PlayerService playerService, PrincedomService princedomService, IHubContext<RiskHub> hubContext)
         {
             _context = context;
             _playerService = playerService;
             _princedomService = princedomService;
+            _hubContext = hubContext;
         }
 
         public async Task<Game> GetGame(Guid GameID)
@@ -27,6 +32,17 @@ namespace Risk_CS.Services
             if (game == null) throw new Exception("Game not found");
 
             return game;
+        }
+
+        public async Task<List<Game>> GetWaitingGames()
+        {
+            List<Game> games = await _context.Games
+                                .Include(game => game.Players)
+                                .Where(game => game.GameState == State.WAITING )
+                                .ToListAsync();
+            if (games == null) throw new Exception("Game not found");
+
+            return games;
         }
 
 
@@ -46,7 +62,25 @@ namespace Risk_CS.Services
 
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
+        }
+
+        public async void DeleteGame(Guid gameId)
+        {
+            var game = _context.Games
+                .Include(g => g.Players)
+                .Include(g => g.Princedoms)
+                .First(g => g.Id == gameId);
+
+            _context.Player.RemoveRange(game.Players);
+            _context.Princedoms.RemoveRange(game.Princedoms);
+            _context.Games.Remove(game);
+
+            _context.SaveChanges();
         }
 
         public async Task<JoinResultDTO> JoinGame(PlayerDTO playerDTO, Guid GameID)
@@ -66,6 +100,9 @@ namespace Risk_CS.Services
 
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             JoinResultDTO resultDTO = new JoinResultDTO(game, newPlayer)
             {
                 Game = game,
@@ -73,6 +110,85 @@ namespace Risk_CS.Services
             };
             return resultDTO;
 
+        }
+
+        public async Task<Game> LeaveLobby(Guid playerID)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerID));
+
+            if (game == null) throw new Exception($"Game not found");
+            if (game.GameState != State.WAITING) throw new Exception("Cannot leave a game that has already started");
+
+            if (game.CurrentPlayerID == playerID)
+            {
+                int currentIndex = game.Players.FindIndex(p => p.Id == playerID);
+                int nextIndex = (currentIndex + 1) % game.Players.Count;
+
+                game.CurrentPlayerID = game.Players[nextIndex].Id;
+            }
+
+            if(game.Players.Count == 1)
+            {
+                DeleteGame(game.Id);
+            } else
+            {
+                game.Players.RemoveAll(p => p.Id == playerID);
+                await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+            }
+
+                
+            await _context.SaveChangesAsync();
+            return game;
+        }
+
+        public async Task<Game> LeaveGame(Guid playerID)
+        {
+            // Getting the game by the playerID given
+            Game game = await _context.Games
+                            .Include(g => g.Players)
+                            .Include(g => g.Princedoms)
+                            .FirstOrDefaultAsync(g => g.Players.Any(p => p.Id == playerID));
+
+            if (game == null) throw new Exception($"Game not found");
+
+            int aliveCount = game.Players.Count(p => p.IsAlive);
+            if (aliveCount < 2)
+            {
+                game.GameState = State.FINISHED;
+            }
+            else
+            {
+                if (game.CurrentPlayerID == playerID)
+                {
+                    int currentIndex = game.Players.FindIndex(p => p.Id == playerID);
+
+
+                    for (int i = 1; i < game.Players.Count; i++)
+                    {
+                        int nextIndex = (currentIndex + i) % game.Players.Count;
+                        var candidate = game.Players[nextIndex];
+
+                        if (candidate.IsAlive)
+                        {
+                            game.CurrentPlayerID = candidate.Id;
+
+                            game.GameState = State.PLACING;
+                            break;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await _hubContext.Clients.Group(game.Id.ToString())
+                    .SendAsync("ReceiveGame", game);
+            }
+
+            return game;
         }
 
         public async Task<Game> StartGame(Guid GameID)
@@ -91,7 +207,7 @@ namespace Risk_CS.Services
             Random random = new Random();
 
             // Setting the first Highstorm
-            game.NextHighstorm = random.Next(1, 3);
+            game.NextHighstorm = random.Next(4, 6);
 
 
             // Assigning princedoms to players randomly
@@ -125,6 +241,9 @@ namespace Risk_CS.Services
             game.GameState = State.PLACING;
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -184,6 +303,10 @@ namespace Risk_CS.Services
             game.GameState = State.ATTACKING;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -217,6 +340,10 @@ namespace Risk_CS.Services
             destinationPrincedom.Troops += movement.Troops;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
 
@@ -238,10 +365,19 @@ namespace Risk_CS.Services
 
             game.CurrentPlayerID = game.Players[nextIndex].Id;
 
+            // Skipping eliminated players
+            Player nextPlayer = game.Players.First(p => p.Id == game.CurrentPlayerID);
+            while (nextPlayer.IsAlive == false)
+            {
+                nextIndex = (nextIndex + 1) % game.Players.Count;
+                game.CurrentPlayerID = game.Players[nextIndex].Id;
+                nextPlayer = game.Players.First(p => p.Id == game.CurrentPlayerID);
+            }
+
             // Assigning his troops
             _playerService.AsignTroops(game.Players[nextIndex]);
 
-
+            bool stormHappened = false;
             // Calculating the next Highstorm
             game.NextHighstorm--;
             if (game.NextHighstorm == 0)
@@ -253,13 +389,23 @@ namespace Risk_CS.Services
                         p.Troops--;
                     }
                 }
+                stormHappened = true;
             }
 
+            Random random = new Random();
+            game.NextHighstorm = random.Next(4, 6);
 
             // Changing the GameState for the next player
             game.GameState = State.PLACING;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveHighStorm", game);
+
             return game;
         }
 
@@ -312,13 +458,14 @@ namespace Risk_CS.Services
             attacking.Troops -= lossAtk;
             defending.Troops -= lossDef;
 
-
+            bool conquered = false;
             // Set the new owner if the princedom is conquererd
             if (defending.Troops <= 0)
             {
                 defending.PlayerID = attackerGuid;
                 attacking.Troops -= numDiceAtk;
                 defending.Troops = numDiceAtk;
+                conquered = true;
             }
 
             CheckEliminatedPlayers(game);
@@ -329,11 +476,22 @@ namespace Risk_CS.Services
                 UpdatedGame = game,
                 AttackerDice = diceAtk,
                 DefenderDice = diceDef,
+                AttackerLost = lossAtk,
+                DeffenderLost = lossDef,
                 AttackingPrincedomId = attack.AttackingPrincedomId,
-                DefendingPrincedomId = attack.DefendingPrincedomId
+                DefendingPrincedomId = attack.DefendingPrincedomId,
+                Conquered = conquered,
+
             };
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("RecieveAttack", resultDTO);
+
             return resultDTO;
         }
 
@@ -383,6 +541,10 @@ namespace Risk_CS.Services
             game.GameState = State.MOVING;
 
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
+
             return game;
         }
     }

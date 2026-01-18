@@ -15,6 +15,18 @@ namespace Risk_CS.Controllers
             _gameService = gameService;
         }
 
+        [HttpGet("getWaiting")]
+        public async Task<ActionResult<List<Game>>> GetGame()
+        {
+            List<Game> games = await _gameService.GetWaitingGames();
+            if (games == null)
+            {
+                return BadRequest("Could not recieve game.");
+            }
+
+            return Ok(games);
+        }
+
         [HttpGet("get/{gameID}")]
         public async Task<ActionResult<Game>> GetGame(Guid gameID)
         {
@@ -36,16 +48,56 @@ namespace Risk_CS.Controllers
                 return BadRequest("Could not create game.");
             }
 
-            return Ok(newGame);
+            return Ok(new
+            {
+                gameId = newGame.Id,
+                myPlayerId = newGame.Players[0].Id,
+                newGame
+            });
+        }
+
+        [HttpDelete("delete/{gameID}")]
+        public async Task<ActionResult<String>> DeleteGame(Guid gameID)
+        {
+            _gameService.DeleteGame(gameID);
+            return Ok("Game deleted");
         }
 
         [HttpPost("join/{gameID}")]
-        public async Task<ActionResult<JoinResultDTO>> joinGame(PlayerDTO playerDTO, Guid gameID)
+        public async Task<ActionResult<JoinResultDTO>> JoinGame(PlayerDTO playerDTO, Guid gameID)
         {
             JoinResultDTO result = await _gameService.JoinGame(playerDTO, gameID);
             if (result == null)
             {
                 return BadRequest("Could not join game.");
+            }
+            return Ok(new
+            {
+                gameId = result.Game.Id,
+                myPlayerId = result.Player.Id,
+                result
+            });
+        }
+
+
+        [HttpPost("leave/{playerID}")]
+        public async Task<ActionResult<Game>> LeaveGame(Guid playerID)
+        {
+            Game result = await _gameService.LeaveGame(playerID);
+            if (result == null)
+            {
+                return BadRequest("Could not leave the game.");
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("leaveLobby/{playerID}")]
+        public async Task<ActionResult<Game>> LeaveLobby(Guid playerID)
+        {
+            Game result = await _gameService.LeaveLobby(playerID);
+            if (result == null)
+            {
+                return BadRequest("Could not leave the lobby.");
             }
             return Ok(result);
         }
