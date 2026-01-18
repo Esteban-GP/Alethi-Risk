@@ -95,6 +95,24 @@ body{
     box-shadow: inset 0px 6px 12px rgba(0,0,0,0.8);
   }
 
+  .btn-leg-gray {
+    @apply relative
+      font-serif text-white font-bold uppercase tracking-widest
+      px-10 py-4 select-none
+
+      bg-gradient-to-br from-neutral-800 via-neutral-700 to-neutral-800
+
+      border-[5px]
+      border-t-yellow-500
+      border-l-yellow-400
+      border-r-yellow-600
+      border-b-yellow-600
+      
+
+      transition-all duration-200 ease-in-out;
+  }
+
+
   .section{
     @apply
     border-[5px]
@@ -104,13 +122,15 @@ body{
       border-b-yellow-600
   }
 
-  .section-inverse{
+  .section-wood{
     @apply
     border-[5px]
-      border-b-yellow-500
-      border-r-yellow-400
-      border-l-yellow-600
-      border-t-yellow-600
+      border-b-brown2
+      border-r-brown2
+      border-l-brown1
+      border-t-brown1
   }
+
 }
+
 
