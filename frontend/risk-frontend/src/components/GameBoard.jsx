@@ -3,6 +3,8 @@ import { useGame } from "../context/GameContext";
 import PlayerInfo from "./PlayerInfo";
 import GameMap from "./GameMap";
 import AttackModal from "./AttackModal";
+import HighstormModal from "./HighstormModal";
+import { useState, useEffect } from "react";
 
 import { GiCrossedSwords, GiCrenulatedShield, GiBattleGear } from "react-icons/gi";
 import { ImArrowUp } from "react-icons/im";
@@ -14,6 +16,8 @@ function GameBoard() {
 
     const sourceTerritory = mapData.find(t => t.id === attackSelection.sourceId);
     const targetTerritory = mapData.find(t => t.id === attackSelection.targetId);
+
+    const [winner, setWinner] = useState("")
 
     const leaveLobby = async () => {
         try {
@@ -34,6 +38,18 @@ function GameBoard() {
     }
 
     if (!game) return <div>No game loaded</div>;
+
+    const getWinner = () => {
+        if (game.gameState == "FINISHED") {
+            const winningPlayer = game.players.find(p => p.isAlive == true)
+            setWinner(winningPlayer.name)
+        }
+    }
+
+    useEffect(() => {
+        getWinner();
+    }, [game]);
+
 
     return (
         <div className="grid grid-cols-8">
@@ -121,7 +137,7 @@ function GameBoard() {
                             <div className="text-white transition">
                                 <div className="grid grid-cols-[4.5rem_1fr] text-2xl">
                                     <div className="flex justify-center items-center section-wood py-3 w-18">
-                                        {sourceTerritory && (<ImArrowUp className="rotate-180 text-red-400"/>)}
+                                        {sourceTerritory && (<ImArrowUp className="rotate-180 text-red-400" />)}
                                     </div>
                                     <div className="flex justify-center items-center text-center section-wood py-3 px-3">
                                         {sourceTerritory?.name}
@@ -145,7 +161,7 @@ function GameBoard() {
                             <div className="flex flex-col space-y-4">
                                 {sourceTerritory ?
                                     (
-                                        <button className="btn-legendary transition" onClick={() => {sendMove()}}>
+                                        <button className="btn-legendary transition" onClick={() => { sendMove() }}>
                                             MOVE
                                         </button>
                                     ) : (
@@ -154,7 +170,7 @@ function GameBoard() {
                                         </button>
                                     )
                                 }
-                                <button className="btn-leg-green transition" onClick={() => {finishMoving()}}>
+                                <button className="btn-leg-green transition" onClick={() => { finishMoving() }}>
                                     FINISH MOVING
                                 </button>
                             </div>
@@ -194,15 +210,42 @@ function GameBoard() {
                         </div>
                     )
                 }
-                {game.gameState != "WAITING" &&
+                {game.gameState === "FINISHED" && (
+                    <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden bg-neutral-950 text-center px-4">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/20 blur-[120px] rounded-full pointer-events-none"></div>
+                        <div className="relative z-10 space-y-8 animate-fade-in-up font-serif">
+                            <h1 className="text-4xl md:text-6xl font-bold tracking-widest uppercase
+                                text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600
+                                drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                Congratulations
+                            </h1>
+
+                            <div className="py-4">
+                                <h2 className="text-6xl md:text-8xl font-extrabold text-white drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
+                                    {winner}
+                                </h2>
+                            </div>
+
+                            <p className="text-xl md:text-2xl text-amber-200/70 font-light tracking-wide uppercase border-t border-amber-500/30 pt-6 inline-block">
+                                You won the game!
+                            </p>
+
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
+                    </div>
+                )}
+                {game.gameState != "WAITING" && game.gameState != "FINISHED" &&
                     (
                         <div className="min-h-screen">
                             <GameMap></GameMap>
                         </div>
                     )
                 }
+
             </div>
             <AttackModal></AttackModal>
+            <HighstormModal></HighstormModal>
         </div>
     );
 }

@@ -389,11 +389,13 @@ namespace Risk_CS.Services
                         p.Troops--;
                     }
                 }
-                stormHappened = true;
-            }
+                stormHappened = true; 
+                Random random = new Random();
+                game.NextHighstorm = random.Next(4, 6);
 
-            Random random = new Random();
-            game.NextHighstorm = random.Next(4, 6);
+                await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveHighStorm", game);
+            }
 
             // Changing the GameState for the next player
             game.GameState = State.PLACING;
@@ -402,9 +404,6 @@ namespace Risk_CS.Services
 
             await _hubContext.Clients.Group(game.Id.ToString())
                 .SendAsync("ReceiveGame", game);
-
-            await _hubContext.Clients.Group(game.Id.ToString())
-                .SendAsync("ReceiveHighStorm", game);
 
             return game;
         }
@@ -519,7 +518,7 @@ namespace Risk_CS.Services
                 }
                 
 
-                if(game.Players.Count == 0)
+                if(game.Players.Count == 1)
                 {
                     game.GameState = State.FINISHED;
                 }

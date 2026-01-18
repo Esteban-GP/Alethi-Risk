@@ -27,6 +27,8 @@ export const GameProvider = ({ children }) => {
 
     const [troopsMoving, setTroopsMoving] = useState(1)
 
+    const [showHighstormModal, setShowHighstormModal] = useState(false)
+
     const [loadingSession, setLoadingSession] = useState(false);
 
     const connectionRef = useRef(null);
@@ -84,9 +86,9 @@ export const GameProvider = ({ children }) => {
             console.log(battleResult)
         });
 
-        newConnection.on("HighstormAlert", (updatedGame, msg) => {
-            console.log(`⚡ ${msg}`);
-            setGame(updatedGame);
+        newConnection.on("ReceiveHighStorm", (game) => {
+            console.log(`A highstorm passed by`);
+            setShowHighstormModal(true);
         });
 
         try {
@@ -181,7 +183,7 @@ export const GameProvider = ({ children }) => {
         }));
 
         try {
-            const res = await axios.post(`${API_URL}/game/placeTroops/${myPlayerId}`,
+            const res = await axios.post(`${API_URL}/game/place/${myPlayerId}`,
                 placementsList
             ).then(
                 setPlacements({})
@@ -218,7 +220,7 @@ export const GameProvider = ({ children }) => {
 
     const sendMove = async () => {
         try {
-            const res = await axios.post(`${API_URL}/game/moveTroops/${myPlayerId}`, {
+            const res = await axios.post(`${API_URL}/game/move/${myPlayerId}`, {
                 originPrincedomId: attackSelection.sourceId,
                 destPrincedomId: attackSelection.targetId,
                 troops: troopsMoving
@@ -235,7 +237,7 @@ export const GameProvider = ({ children }) => {
 
     const finishMoving = async () => {
         try {
-            const res = await axios.post(`${API_URL}/game/finishMove/${myPlayerId}`);
+            const res = await axios.post(`${API_URL}/game/move/finish/${myPlayerId}`);
             clearAttackSelection()
         } catch (error) {
             alert("Error en inalizar los ataques: " + error.message);
@@ -265,6 +267,7 @@ export const GameProvider = ({ children }) => {
         attackSelection,
         battleReport,
         troopsMoving,
+        showHighstormModal,
         isNeighbor,
         setMyPlayerId,
         setPlacements,
@@ -279,7 +282,8 @@ export const GameProvider = ({ children }) => {
         finishAttack,
         setTroopsMoving,
         sendMove,
-        finishMoving
+        finishMoving,
+        setShowHighstormModal
     };
 
     return (
