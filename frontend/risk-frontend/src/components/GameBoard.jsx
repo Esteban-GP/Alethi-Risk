@@ -2,11 +2,13 @@ import axios from "axios";
 import { useGame } from "../context/GameContext";
 import PlayerInfo from "./PlayerInfo";
 import GameMap from "./GameMap";
+import AttackModal from "./AttackModal";
 
-import { GiCrossedSwords, GiCrenulatedShield } from "react-icons/gi";
+import { GiCrossedSwords, GiCrenulatedShield, GiBattleGear } from "react-icons/gi";
+import { ImArrowUp } from "react-icons/im";
 
 function GameBoard() {
-    const { game, leaveGame, sendPlacements, mapData, attackSelection } = useGame();
+    const { game, leaveGame, sendPlacements, mapData, attackSelection, sendAttack, finishAttack, troopsMoving, sendMove, finishMoving } = useGame();
     const API_URL = "http://localhost:5282";
     const playerID = localStorage.getItem("myPlayerId")
 
@@ -70,28 +72,94 @@ function GameBoard() {
                             First select the attacking Princedom and then the objective
                         </div>
                         {sourceTerritory && (
-                        <div className="text-white transition">
-                            <div className="grid grid-cols-[4.5rem_1fr] text-2xl">
-                                <div className="flex justify-center items-center section-wood py-3 w-18">
-                                    {sourceTerritory && (<GiCrossedSwords />)}
+                            <div className="text-white transition">
+                                <div className="grid grid-cols-[4.5rem_1fr] text-2xl">
+                                    <div className="flex justify-center items-center section-wood py-3 w-18">
+                                        {sourceTerritory && (<GiCrossedSwords />)}
+                                    </div>
+                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
+                                        {sourceTerritory?.name}
+                                    </div>
+                                    <div className="flex justify-center items-center section-wood py-3 w-18">
+                                        {targetTerritory && (<GiCrenulatedShield />)}
+                                    </div>
+                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
+                                        {targetTerritory?.name}
+                                    </div>
                                 </div>
-                                <div className="flex justify-center items-center text-center section-wood py-3 px-3">
-                                    {sourceTerritory?.name}
-                                </div>
-                                <div className="flex justify-center items-center section-wood py-3 w-18">
-                                    {targetTerritory && (<GiCrenulatedShield />)}
-                                </div>
-                                <div className="flex justify-center items-center text-center section-wood py-3 px-3">
-                                   {targetTerritory?.name} 
-                                </div>
-                            </div>
-                        </div>)}
+                            </div>)}
 
                         {playerID == game.currentPlayerID && (
-                            <button className="btn-legendary transition">
-                                ATTACK
-                            </button>
+                            <div className="flex flex-col space-y-4">
+                                {sourceTerritory ?
+                                    (
+                                        <button className="btn-legendary transition" onClick={() => sendAttack()}>
+                                            ATTACK
+                                        </button>
+                                    ) : (
+                                        <button className="btn-leg-gray ">
+                                            ATTACK
+                                        </button>
+                                    )
+                                }
+                                <button className="btn-leg-green transition" onClick={() => finishAttack()}>
+                                    FINISH ATTACK
+                                </button>
+                            </div>
                         )}
+                    </div>
+                )}
+                {game.gameState == "MOVING" && (
+                    <div className="h-full border-8 flex flex-col justify-center space-y-10 items-center border-t-brown1 border-l-brown1 border-r-brown2 border-b-brown2 bg-radial from-neutral-800 to-neutral-900">
+                        <div className="text-white text-2xl font-bold">
+                            MOVING
+                        </div>
+                        <div className="text-white text-xl font-bold normal-case text-center mx-15">
+                            Select two of your princedoms to move troops between them
+                        </div>
+                        {sourceTerritory && (
+                            <div className="text-white transition">
+                                <div className="grid grid-cols-[4.5rem_1fr] text-2xl">
+                                    <div className="flex justify-center items-center section-wood py-3 w-18">
+                                        {sourceTerritory && (<ImArrowUp className="rotate-180 text-red-400"/>)}
+                                    </div>
+                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
+                                        {sourceTerritory?.name}
+                                    </div>
+                                    <div className="flex justify-center items-center section-wood py-3 w-18">
+                                        {targetTerritory && (<ImArrowUp className="text-green-500" />)}
+                                    </div>
+                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
+                                        {targetTerritory?.name}
+                                    </div>
+                                    <div className="flex justify-center items-center section-wood py-3 w-18">
+                                        {targetTerritory && (<GiBattleGear />)}
+                                    </div>
+                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
+                                        {troopsMoving}
+                                    </div>
+                                </div>
+                            </div>)}
+
+                        {playerID == game.currentPlayerID && (
+                            <div className="flex flex-col space-y-4">
+                                {sourceTerritory ?
+                                    (
+                                        <button className="btn-legendary transition" onClick={() => {sendMove()}}>
+                                            MOVE
+                                        </button>
+                                    ) : (
+                                        <button className="btn-leg-gray ">
+                                            MOVE
+                                        </button>
+                                    )
+                                }
+                                <button className="btn-leg-green transition" onClick={() => {finishMoving()}}>
+                                    FINISH MOVING
+                                </button>
+                            </div>
+                        )}
+
                     </div>
                 )}
                 {game.gameState == "FINISHED" && (
@@ -134,6 +202,7 @@ function GameBoard() {
                     )
                 }
             </div>
+            <AttackModal></AttackModal>
         </div>
     );
 }

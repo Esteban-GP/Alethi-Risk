@@ -24,6 +24,9 @@ body{
 .cinzel{
     font-family: 'Cinzel', 'serif';
 }
+.noto{
+    font-family: 'Noto Serif', 'serif'
+}
 
 @layer components {
   .btn-legendary {

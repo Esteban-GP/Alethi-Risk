@@ -80,9 +80,6 @@ function GameHub() {
       });
   };
 
-  //if (loading) return <p>Cargando...</p>;
-  //if (error) return <p>Error: {error}</p>;
-
   return (
     <div className="min-h-screen w-full  bg-[url('/src/assets/roshar.png')] bg-cover cursor-default">
       <div className="backdrop-blur-xs min-h-screen flex flex-col items-center justify-center">
@@ -95,7 +92,7 @@ function GameHub() {
               <button className="btn-legendary mt-20 mb-5 w-60" onClick={() => setCreate(true)}>
                 Create Game
               </button>
-              <button className="btn-legendary mt-20 mb-5 w-60" onClick={() => setJoin(true)}>
+              <button className="btn-legendary mt-20 mb-5 w-60" onClick={() => {setJoin(true), refreshGames()}}>
                 Join Game
               </button>
             </div>

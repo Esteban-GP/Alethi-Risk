@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "../context/GameContext";
-import { GiPiercingSword } from "react-icons/gi";
+import { GiPiercingSword, GiTowerFlag, GiBattleGear } from "react-icons/gi";
+import AmountModal from "./AmountModal";
 
 function GameMap() {
     const { 
@@ -16,8 +17,8 @@ function GameMap() {
     } = useGame();
 
     const [attackSourceId, setAttackSourceId] = useState(null);
-    const [attackObjectiveId, setAttackObjectiveId] = useState(null);
 
+    const [openModal, setOpenModal] = useState(false)
 
     const troopsUsedInDraft = Object.values(placements).reduce((a, b) => a + b, 0);
     const troopsRemaining = availableTroops - troopsUsedInDraft;
@@ -66,12 +67,28 @@ function GameMap() {
 
         if (!isMine && isNeighbor(attackSourceId, princedom.id)) {
             setAttackSelection({ sourceId: attackSourceId, targetId: princedom.id })
-
-            // AQUI HAY QUE ENVIAR TODO
-            console.log(attackSelection)
-
             setAttackSourceId(null)
-            setAttackObjectiveId(null)
+        }
+    };
+
+    const handleMoveClick = (princedom) => {
+        const isMine = princedom.playerID === myPlayerId;
+        
+        if (!attackSourceId) {
+            if (isMine && princedom.troops > 1) {
+                setAttackSourceId(princedom.id);
+            }
+            return;
+        }
+
+        if (princedom.id === attackSourceId) {
+            setAttackSourceId(null);
+            return;
+        }
+
+        if (isMine && isNeighbor(attackSourceId, princedom.id)) {
+            setAttackSelection({ sourceId: attackSourceId, targetId: princedom.id })
+            setOpenModal(true)
         }
     };
 
@@ -110,6 +127,32 @@ function GameMap() {
                     }
                 }
 
+                if (game.gameState === "MOVING" && isMyTurn) {
+                    
+                    if (!attackSourceId) {
+                        if (isMine && princedom.troops > 1) {
+                            visualClass += "hover:scale-105 hover:border-white cursor-pointer hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]";
+                            clickHandler = () => handleMoveClick(princedom);
+                        } else {
+                            visualClass += "opacity-50 grayscale-[0.5] cursor-default";
+                        }
+                    } 
+                    else {
+                        const isSource = princedom.id === attackSourceId;
+                        const isTargetable = isMine && isNeighbor(attackSourceId, princedom.id);
+
+                        if (isSource) {
+                            visualClass += "scale-110 border-yellow-400 z-10 shadow-[0_0_20px_rgba(250,204,21,0.8)] cursor-pointer";
+                            clickHandler = () => handleMoveClick(princedom);
+                        } else if (isTargetable) {
+                            visualClass += "animate-pulse border-red-500 scale-105 cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.6)]";
+                            clickHandler = () => handleMoveClick(princedom);
+                        } else {
+                            visualClass += "opacity-20 blur-[1px] cursor-default";
+                        }
+                    }
+                }
+
 
                 return (
                     <div 
@@ -123,8 +166,8 @@ function GameMap() {
                          <div className="backdrop-saturate-50 bg-black/20 size-full flex flex-col p-2">
                             <div className="font-bold text-shadow-sm">{princedom.name}</div>
                             
-                            <div className="grow flex items-center justify-center text-4xl font-black drop-shadow-md">
-                                {princedom.troops}
+                            <div className="grow flex items-center justify-center text-4xl font-black drop-shadow-md noto">
+                                <GiBattleGear className="mr-2"/> {princedom.troops}
                             </div>
 
                             <div className="text-xs opacity-70">{princedom.blueprintID}</div>
@@ -147,6 +190,7 @@ function GameMap() {
                     </div>
                 );
             })}
+            <AmountModal openModal={openModal} setOpenModal={setOpenModal} princedomID={attackSourceId} setAttackSourceId={setAttackSourceId}></AmountModal>
         </div>
     );
 }

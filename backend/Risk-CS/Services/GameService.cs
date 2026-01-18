@@ -477,7 +477,7 @@ namespace Risk_CS.Services
                 AttackerDice = diceAtk,
                 DefenderDice = diceDef,
                 AttackerLost = lossAtk,
-                DeffenderLost = lossDef,
+                DefenderLost = lossDef,
                 AttackingPrincedomId = attack.AttackingPrincedomId,
                 DefendingPrincedomId = attack.DefendingPrincedomId,
                 Conquered = conquered,
@@ -490,7 +490,7 @@ namespace Risk_CS.Services
                 .SendAsync("ReceiveGame", game);
 
             await _hubContext.Clients.Group(game.Id.ToString())
-                .SendAsync("RecieveAttack", resultDTO);
+                .SendAsync("ReceiveAttack", resultDTO);
 
             return resultDTO;
         }

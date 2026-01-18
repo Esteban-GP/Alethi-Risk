@@ -17,11 +17,15 @@ export const GameProvider = ({ children }) => {
 
     const [placements, setPlacements] = useState({});
 
-    const [attackSelection, setAttackSelection] = useState({ 
-        sourceId: null, 
-        targetId: null 
+    const [attackSelection, setAttackSelection] = useState({
+        sourceId: null,
+        targetId: null
     });
     const clearAttackSelection = () => setAttackSelection({ sourceId: null, targetId: null });
+
+    const [battleReport, setBattleReport] = useState(null)
+
+    const [troopsMoving, setTroopsMoving] = useState(1)
 
     const [loadingSession, setLoadingSession] = useState(false);
 
@@ -57,6 +61,7 @@ export const GameProvider = ({ children }) => {
             setLoadingSession(false);
         };
 
+        console.log(battleReport)
         restoreSession();
     }, []);
 
@@ -72,6 +77,11 @@ export const GameProvider = ({ children }) => {
         newConnection.on("ReceiveGame", (updatedGame) => {
             console.log("🔄 Actualización recibida:", updatedGame);
             setGame(updatedGame);
+        });
+
+        newConnection.on("ReceiveAttack", (battleResult) => {
+            setBattleReport(battleResult)
+            console.log(battleResult)
         });
 
         newConnection.on("HighstormAlert", (updatedGame, msg) => {
@@ -161,6 +171,8 @@ export const GameProvider = ({ children }) => {
         return sourceConfig.Frontiers.includes(targetTerritory.blueprintID);
     };
 
+    const clearBattleReport = () => setBattleReport(null)
+
 
     const sendPlacements = async () => {
         const placementsList = Object.entries(placements).map(([id, amount]) => ({
@@ -178,6 +190,57 @@ export const GameProvider = ({ children }) => {
             alert("Error creando partida: " + error.message);
         }
     };
+
+    const sendAttack = async () => {
+        try {
+            const res = await axios.post(`${API_URL}/game/attack/${myPlayerId}`, {
+                attackingPrincedomId: attackSelection.sourceId,
+                defendingPrincedomId: attackSelection.targetId
+            });
+
+            if (res) {
+                clearAttackSelection()
+            }
+
+        } catch (error) {
+            alert("Error en el ataque: " + error.message);
+        }
+    }
+
+    const finishAttack = async () => {
+        try {
+            const res = await axios.post(`${API_URL}/game/attack/finish/${myPlayerId}`);
+            clearAttackSelection()
+        } catch (error) {
+            alert("Error en inalizar los ataques: " + error.message);
+        }
+    }
+
+    const sendMove = async () => {
+        try {
+            const res = await axios.post(`${API_URL}/game/moveTroops/${myPlayerId}`, {
+                originPrincedomId: attackSelection.sourceId,
+                destPrincedomId: attackSelection.targetId,
+                troops: troopsMoving
+            });
+
+            if (res) {
+                clearAttackSelection()
+            }
+
+        } catch (error) {
+            alert("Error en el ataque: " + error.message);
+        }
+    }
+
+    const finishMoving = async () => {
+        try {
+            const res = await axios.post(`${API_URL}/game/finishMove/${myPlayerId}`);
+            clearAttackSelection()
+        } catch (error) {
+            alert("Error en inalizar los ataques: " + error.message);
+        }
+    }
 
 
     const isMyTurn = game?.currentPlayerID === myPlayerId;
@@ -200,6 +263,8 @@ export const GameProvider = ({ children }) => {
         placements,
         neighborList,
         attackSelection,
+        battleReport,
+        troopsMoving,
         isNeighbor,
         setMyPlayerId,
         setPlacements,
@@ -209,7 +274,12 @@ export const GameProvider = ({ children }) => {
         setGame,
         sendPlacements,
         setAttackSelection,
-        clearAttackSelection
+        sendAttack,
+        clearBattleReport,
+        finishAttack,
+        setTroopsMoving,
+        sendMove,
+        finishMoving
     };
 
     return (
