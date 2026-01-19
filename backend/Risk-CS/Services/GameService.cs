@@ -156,6 +156,9 @@ namespace Risk_CS.Services
 
             if (game == null) throw new Exception($"Game not found");
 
+            Player leavingPlayer = game.Players.First(p => p.Id == playerID);
+            leavingPlayer.IsAlive = false;
+
             int aliveCount = game.Players.Count(p => p.IsAlive);
             if (aliveCount < 2)
             {
@@ -182,11 +185,11 @@ namespace Risk_CS.Services
                         }
                     }
                 }
-
-                await _context.SaveChangesAsync();
-                await _hubContext.Clients.Group(game.Id.ToString())
-                    .SendAsync("ReceiveGame", game);
             }
+
+            await _context.SaveChangesAsync();
+            await _hubContext.Clients.Group(game.Id.ToString())
+                .SendAsync("ReceiveGame", game);
 
             return game;
         }

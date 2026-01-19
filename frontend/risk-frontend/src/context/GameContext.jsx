@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import * as signalR from "@microsoft/signalr";
 import axios from 'axios';
+import { TERRITORY_PATHS } from '../assets/MapData';
 
 const GameContext = createContext();
 
@@ -136,7 +137,17 @@ export const GameProvider = ({ children }) => {
                 troopsAdded: 0,
                 isMine: isMine
             };
-        });
+        }).sort((a, b) => {
+            const configA = TERRITORY_PATHS[a.blueprintID];
+            const configB = TERRITORY_PATHS[b.blueprintID];
+
+            
+            const zIndexA = configA?.zIndex || 0;
+            const zIndexB = configB?.zIndex || 0;
+            if (zIndexA !== zIndexB) return zIndexA - zIndexB;
+
+            return (configA?.textY || 0) - (configB?.textY || 0);
+        }).reverse();
 
     }, [game, myPlayerId]);
 
@@ -244,6 +255,22 @@ export const GameProvider = ({ children }) => {
         }
     }
 
+    const leaveCurrentGame = async () => {
+        try {
+            
+            const res = await axios.post(`${API_URL}/game/leave/${myPlayerId}`);
+            if (res){
+                console.log(res)
+            }
+            console.log(myPlayerId)
+            leaveGame();
+
+        } catch (error) {
+            alert("Error saliendo de la partida: " + error.message);
+        }
+    }
+
+
 
     const isMyTurn = game?.currentPlayerID === myPlayerId;
 
@@ -283,7 +310,8 @@ export const GameProvider = ({ children }) => {
         setTroopsMoving,
         sendMove,
         finishMoving,
-        setShowHighstormModal
+        setShowHighstormModal,
+        leaveCurrentGame
     };
 
     return (

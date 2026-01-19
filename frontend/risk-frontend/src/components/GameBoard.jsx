@@ -8,9 +8,9 @@ import { useState, useEffect } from "react";
 
 import { GiCrossedSwords, GiCrenulatedShield, GiBattleGear } from "react-icons/gi";
 import { ImArrowUp } from "react-icons/im";
-
+import { IoMdExit } from "react-icons/io";
 function GameBoard() {
-    const { game, leaveGame, sendPlacements, mapData, attackSelection, sendAttack, finishAttack, troopsMoving, sendMove, finishMoving } = useGame();
+    const { game, leaveGame, sendPlacements, mapData, attackSelection, sendAttack, finishAttack, troopsMoving, sendMove, finishMoving, leaveCurrentGame } = useGame();
     const API_URL = "http://localhost:5282";
     const playerID = localStorage.getItem("myPlayerId")
 
@@ -133,43 +133,9 @@ function GameBoard() {
                         <div className="text-white text-xl font-bold normal-case text-center mx-15">
                             Select two of your princedoms to move troops between them
                         </div>
-                        {sourceTerritory && (
-                            <div className="text-white transition">
-                                <div className="grid grid-cols-[4.5rem_1fr] text-2xl">
-                                    <div className="flex justify-center items-center section-wood py-3 w-18">
-                                        {sourceTerritory && (<ImArrowUp className="rotate-180 text-red-400" />)}
-                                    </div>
-                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
-                                        {sourceTerritory?.name}
-                                    </div>
-                                    <div className="flex justify-center items-center section-wood py-3 w-18">
-                                        {targetTerritory && (<ImArrowUp className="text-green-500" />)}
-                                    </div>
-                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
-                                        {targetTerritory?.name}
-                                    </div>
-                                    <div className="flex justify-center items-center section-wood py-3 w-18">
-                                        {targetTerritory && (<GiBattleGear />)}
-                                    </div>
-                                    <div className="flex justify-center items-center text-center section-wood py-3 px-3">
-                                        {troopsMoving}
-                                    </div>
-                                </div>
-                            </div>)}
 
                         {playerID == game.currentPlayerID && (
                             <div className="flex flex-col space-y-4">
-                                {sourceTerritory ?
-                                    (
-                                        <button className="btn-legendary transition" onClick={() => { sendMove() }}>
-                                            MOVE
-                                        </button>
-                                    ) : (
-                                        <button className="btn-leg-gray ">
-                                            MOVE
-                                        </button>
-                                    )
-                                }
                                 <button className="btn-leg-green transition" onClick={() => { finishMoving() }}>
                                     FINISH MOVING
                                 </button>
@@ -230,8 +196,9 @@ function GameBoard() {
                                 You won the game!
                             </p>
 
+                            
                         </div>
-
+                        <button className="btn-legendary mt-30" onClick={() => leaveCurrentGame()}>Return to the lobby</button>
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
                     </div>
                 )}
@@ -244,6 +211,15 @@ function GameBoard() {
                 }
 
             </div>
+            {game.gameState != "WAITING" && game.gameState != "FINISHED" &&
+                (
+                    <div className="absolute right-5 top-5 section-wood text-white text-4xl" onClick={() => leaveCurrentGame()}>
+                        <div className="bg-radial from-red-600 to-red-700 border-6 border-t-red-500 border-l-red-500 border-r-red-800 border-b-red-800">
+                            <IoMdExit />
+                        </div>
+                    </div>
+                )
+            }
             <AttackModal></AttackModal>
             <HighstormModal></HighstormModal>
         </div>
