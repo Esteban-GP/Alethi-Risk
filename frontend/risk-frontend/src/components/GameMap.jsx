@@ -3,6 +3,7 @@ import { useGame } from "../context/GameContext";
 import { GiPiercingSword, GiTowerFlag, GiBattleGear } from "react-icons/gi";
 import AmountModal from "./AmountModal";
 import { TERRITORY_PATHS } from "../assets/MapData";
+import mapBg from "../assets/map.png"
 
 function GameMap() {
     const {
@@ -94,10 +95,16 @@ function GameMap() {
     };
 
     return (
-        <div className="w-full h-screen bg-radial from-neutral-800 to-neutral-900 flex items-center justify-center select-none overflow-hidden">
+        <div className=" w-full h-screen flex items-center justify-center select-none overflow-hidden"
+            style={{
+                backgroundImage: `url(${mapBg})`,
+                backgroundSize: "110% 120%",
+                backgroundPosition: "-170px"
+            }}>
+            <div className="size-full backdrop-brightness-75 flex items-center justify-center">
             <svg
-                viewBox="0 0 4961 2908"
-                className="w-full h-full max-w-7xl drop-shadow-2xl scale-110 -mt-25"
+                viewBox="0 0 4961 3060"
+                className="w-full h-full max-w-7xl drop-shadow-2xl scale-110 -mt-20 ml-30"
                 preserveAspectRatio="xMidYMid meet"
             >
                 <defs>
@@ -202,8 +209,8 @@ function GameMap() {
                     }
 
                     return (
-                        <g 
-                            key={princedom.id} 
+                        <g
+                            key={princedom.id}
                             onClick={clickHandler}
                             style={{ cursor: cursor, transition: "all 0.3s ease" }}
                             className={`${animation} hover:brightness-110`}
@@ -228,7 +235,7 @@ function GameMap() {
                                 {princedom.troops}
                             </text>
 
-    
+
                             <text
                                 x={shapeData.textX}
                                 y={shapeData.textY + 100}
@@ -240,14 +247,14 @@ function GameMap() {
                             </text>
                             {game.gameState === "PLACING" && isMine && isMyTurn && (
                                 <foreignObject
-                                    x={shapeData.textX - 180} 
-                                    y={shapeData.textY - 200} 
+                                    x={shapeData.textX - 180}
+                                    y={shapeData.textY - 200}
                                     width="360"
                                     height="95"
                                     className="overflow-visible"
                                 >
                                     <div className="flex justify-center items-center space-x-4 bg-white/60 py-3 rounded-full">
-                                        <button 
+                                        <button
                                             className="bg-red-600 hover:bg-red-500 text-white rounded-full w-24 h-24 text-6xl shadow-lg border-4 border-black"
                                             onClick={(e) => { e.stopPropagation(); deductTroops(princedom.id); }}
                                         >
@@ -256,7 +263,7 @@ function GameMap() {
                                         <span className="text-6xl font-black drop-shadow-md w-24 text-center text-black">
                                             {placements[princedom.id] || 0}
                                         </span>
-                                        <button 
+                                        <button
                                             className="bg-green-600 hover:bg-green-500 text-white rounded-full w-24 h-24 text-6xl shadow-lg border-4 border-black"
                                             onClick={(e) => { e.stopPropagation(); addTroops(princedom.id); }}
                                         >
@@ -265,7 +272,7 @@ function GameMap() {
                                     </div>
                                 </foreignObject>
                             )}
-                            
+
 
                             {game.gameState === "ATTACKING" && attackSelection.sourceId === princedom.id && (
                                 <text x={shapeData.textX} y={shapeData.textY - 30} fontSize="30" textAnchor="middle">
@@ -314,6 +321,7 @@ function GameMap() {
                     );*/
                 })}
             </svg>
+            </div>
             <AmountModal openModal={openModal} setOpenModal={setOpenModal} princedomID={attackSourceId} setAttackSourceId={setAttackSourceId}></AmountModal>
         </div>
     );

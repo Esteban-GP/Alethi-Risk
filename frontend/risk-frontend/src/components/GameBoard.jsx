@@ -11,7 +11,7 @@ import { ImArrowUp } from "react-icons/im";
 import { IoMdExit } from "react-icons/io";
 function GameBoard() {
     const { game, leaveGame, sendPlacements, mapData, attackSelection, sendAttack, finishAttack, troopsMoving, sendMove, finishMoving, leaveCurrentGame } = useGame();
-    const API_URL = "http://localhost:5282";
+    const API_URL = "http://192.168.4.30:5282";
     const playerID = localStorage.getItem("myPlayerId")
 
     const sourceTerritory = mapData.find(t => t.id === attackSelection.sourceId);
@@ -42,7 +42,7 @@ function GameBoard() {
     const getWinner = () => {
         if (game.gameState == "FINISHED") {
             const winningPlayer = game.players.find(p => p.isAlive == true)
-            setWinner(winningPlayer.name)
+            setWinner(winningPlayer?.name)
         }
     }
 
@@ -53,6 +53,7 @@ function GameBoard() {
 
     return (
         <div className="grid grid-cols-8">
+            {/* 
             <div className="col-span-2 flex flex-col">
                 {game.players.map((player) => (
                     <div key={player.id}>
@@ -149,8 +150,8 @@ function GameBoard() {
 
                     </div>
                 )}
-            </div>
-            <div className="col-span-6">
+            </div>*/}
+            <div className="col-span-8">
                 {game.gameState == "WAITING" &&
                     (
                         <div className="h-full bg-[url('/src/assets/roshar.png')]  bg-center cursor-default overflow-visible">

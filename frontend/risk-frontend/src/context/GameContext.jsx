@@ -34,8 +34,8 @@ export const GameProvider = ({ children }) => {
 
     const connectionRef = useRef(null);
 
-    const API_URL = "http://localhost:5282";
-    const HUB_URL = "http://localhost:5282/riskhub/";
+    const API_URL = "http://192.168.4.30:5282";
+    const HUB_URL = "http://192.168.4.30:5282/riskhub/";
 
     useEffect(() => {
         const restoreSession = async () => {
@@ -264,7 +264,7 @@ export const GameProvider = ({ children }) => {
             }
             console.log(myPlayerId)
             leaveGame();
-
+            setGame(null);
         } catch (error) {
             alert("Error saliendo de la partida: " + error.message);
         }
