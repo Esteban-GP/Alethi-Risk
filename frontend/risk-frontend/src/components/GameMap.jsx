@@ -129,7 +129,7 @@ function GameMap() {
                     let cursor = "pointer";
                     let animation = "";
 
-                    let visualClass = "h-40 w-full rounded-lg transition-all duration-300 relative border-2 border-transparent";
+                    let visualClass = "h-40 w-full rounded-lg transition-all duration-300 relative border-2 border-transparent border-30";
                     let clickHandler = null;
 
                     if (game.gameState === "ATTACKING" && isMyTurn) {

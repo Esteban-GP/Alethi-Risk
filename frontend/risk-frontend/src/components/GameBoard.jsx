@@ -4,6 +4,8 @@ import PlayerInfo from "./PlayerInfo";
 import GameMap from "./GameMap";
 import AttackModal from "./AttackModal";
 import HighstormModal from "./HighstormModal";
+import ActionModal from "./ActionModal";
+
 import { useState, useEffect } from "react";
 
 import { GiCrossedSwords, GiCrenulatedShield, GiBattleGear } from "react-icons/gi";
@@ -53,13 +55,18 @@ function GameBoard() {
 
     return (
         <div className="grid grid-cols-8">
-            {/* 
+             
             <div className="col-span-2 flex flex-col">
-                {game.players.map((player) => (
+                {game.players.map((player) => {
+                let marginTop = game.players.indexOf(player) * 120 || 20
+                
+                return(
                     <div key={player.id}>
-                        <PlayerInfo player={player} currentPlayerId={game.currentPlayerID}></PlayerInfo>
+                        <PlayerInfo player={player} currentPlayerId={game.currentPlayerID} marginTop={marginTop}></PlayerInfo>
                     </div>
-                ))}
+                )})}
+                <ActionModal></ActionModal>
+                {/*
                 {game.gameState == "WAITING" && (
                     <div className="h-full border-8 border-t-brown1 border-l-brown1 border-r-brown2 border-b-brown2 bg-radial from-neutral-800 to-neutral-900"></div>
                 )
@@ -149,8 +156,8 @@ function GameBoard() {
                     <div className="h-full border-8 border-t-brown1 border-l-brown1 border-r-brown2 border-b-brown2 bg-radial from-neutral-800 to-neutral-900">
 
                     </div>
-                )}
-            </div>*/}
+                )}*/ }
+            </div>
             <div className="col-span-8">
                 {game.gameState == "WAITING" &&
                     (

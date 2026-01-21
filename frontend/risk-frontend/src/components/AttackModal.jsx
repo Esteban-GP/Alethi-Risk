@@ -40,7 +40,7 @@ function AttackModal() {
                                 )
                             })}
                         </div>
-                        <div className="mt-2 text-red-500 font-bold">-{battleReport.attackerLost} Tropas</div>
+                        <div className="mt-2 text-red-500 font-bold">-{battleReport.attackerLost} Troops</div>
                     </div>
 
                     <div className="text-4xl text-gray-500 font-black">VS</div>
@@ -58,17 +58,17 @@ function AttackModal() {
                                 )
                             })}
                         </div>
-                        <div className="mt-2 text-red-500 font-bold">-{battleReport.defenderLost} Tropas</div>
+                        <div className="mt-2 text-red-500 font-bold">-{battleReport.defenderLost} Troops</div>
                     </div>
                 </div>
 
                 <div className="text-2xl font-bold mb-6">
                     {battleReport.conquered
                         ? (
-                            <div className="text-green-600 flex flex-col items-center"><GiTowerFlag className="text-6xl mb-3"/><div>Territorio conquistado</div></div>
+                            <div className="text-green-600 flex flex-col items-center"><GiTowerFlag className="text-6xl mb-3"/><div>Territory conquered</div></div>
                         )
                         : (
-                            <div className="text-red-500 flex flex-col items-center"><GiDragonShield className="text-6xl mb-3"/><div>El territorio se mantiene en pie</div></div>
+                            <div className="text-red-500 flex flex-col items-center"><GiDragonShield className="text-6xl mb-3"/><div>The territory remains strong</div></div>
                         )}
                 </div>
 
@@ -76,7 +76,7 @@ function AttackModal() {
                     onClick={() => clearBattleReport()}
                     className="bg-amber-600 hover:bg-amber-500 text-white px-8 py-2 rounded font-bold text-lg transition-colors"
                 >
-                    CONTINUAR
+                    CONTINUE
                 </button>
             </div>
         </div>
