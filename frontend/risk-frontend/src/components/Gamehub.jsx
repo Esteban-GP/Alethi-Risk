@@ -3,7 +3,7 @@ import axios from "axios";
 import { useGame } from "../context/GameContext";
 
 function GameHub() {
-  const { connectToGame, setMyPlayerId } = useGame();
+  const { connectToGame, setMyPlayerId, setGame } = useGame();
 
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ function GameHub() {
   const [join, setJoin] = useState(false)
   const [create, setCreate] = useState(false)
 
-  const API_URL = "http://localhost:5282/riskhub"; 
+  const API_URL = "http://localhost:5282"; 
 
   useEffect(() => {
     refreshGames();
@@ -31,6 +31,8 @@ function GameHub() {
       });
 
       const { myPlayerId, gameId } = res.data;
+      setGame(res.data.newGame)
+      setMyPlayerId(myPlayerId);
       localStorage.setItem("myPlayerId", myPlayerId);
 
       await connectToGame(gameId);
@@ -40,9 +42,33 @@ function GameHub() {
     }
   };
 
+  const handleJoin = async (gameID) => {
+    if (!playerName) console.log("Pon un nombre, Radiante.");
+    else {
+      try {
+        const res = await axios.post(`${API_URL}/game/join/${gameID}`, {
+          Name: playerName,
+          Color: playerColor
+        });
+
+        const { myPlayerId, gameId } = res.data;
+        setGame(res.data.result.game)
+        setMyPlayerId(myPlayerId);
+        localStorage.setItem("myPlayerId", myPlayerId);
+
+        await connectToGame(gameId);
+
+      } catch (error) {
+        alert("Error creando partida: " + error.message);
+      }
+    }
+    
+  };
+  
+
   const refreshGames = () => {
     axios
-      .get("http://localhost:5282/game/getWaiting")
+      .get(`${API_URL}/game/getWaiting`)
       .then((response) => {
         setGames(response.data);
         setLoading(false);
@@ -53,9 +79,6 @@ function GameHub() {
         setLoading(false);
       });
   };
-
-  if (loading) return <p>Cargando...</p>;
-  //if (error) return <p>Error: {error}</p>;
 
   return (
     <div className="min-h-screen w-full  bg-[url('/src/assets/roshar.png')] bg-cover cursor-default">
@@ -69,7 +92,7 @@ function GameHub() {
               <button className="btn-legendary mt-20 mb-5 w-60" onClick={() => setCreate(true)}>
                 Create Game
               </button>
-              <button className="btn-legendary mt-20 mb-5 w-60" onClick={() => setJoin(true)}>
+              <button className="btn-legendary mt-20 mb-5 w-60" onClick={() => {setJoin(true), refreshGames()}}>
                 Join Game
               </button>
             </div>
@@ -121,22 +144,32 @@ function GameHub() {
                 Available Games
               </div>
               <div className="flex flex-row w-300 justify-end">
-                <button className="mr-3 mb-2 -mt-2"><img src="src/assets/rotate-ccw.png" alt="" className="" /></button>
+                <button className="mr-3 mb-2 -mt-2" onClick={() => refreshGames()}><img src="src/assets/rotate-ccw.png" alt="" className="invert" /></button>
               </div>
-              <div className="section w-300 h-80 bg-gray-900 grid grid-cols-4 grid-rows-2 gap-4 p-3">
+              <div className="section w-300 h-80 bg-gray-900 grid grid-cols-4 grid-rows-2 gap-4 p-3 overflow-y-scroll scroll-smooth
+              [&::-webkit-scrollbar]:w-4
+  [&::-webkit-scrollbar-thumb]:bg-gray-300
+  dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500">
                 {games.map((game) => (
-                  <div key={game.id} className="flex flex-col justify-between text-white cinzel bg-gray-900 
+                  game.players.length < 4 && (
+                    <div key={game.id} className="flex flex-col justify-between text-white cinzel bg-gray-900 
             border-6 p-2 border-t-brown1 border-l-brown1 border-r-brown2 border-b-brown2">
-                    <div className="cinzel font-bold">
-                      {game.players[0].name}'s Game
+                    <div className="cinzel font-bold grid grid-cols-2">
+                      {game.players.map((player) =>(
+                        <div key={player.name} style={{ color: player.color}}>
+                          {player.name}
+                        </div>
+                      ))}
                     </div>
                     <div className="flex flex-row justify-between items-end">
                       <div>
                         Players: {game.players.length} / 4
                       </div>
-                      <div className="btn-leg-green p-2 text-md border-3">Join</div>
+                      <button className="btn-leg-green p-2 text-md border-3" onClick={() => handleJoin(game.id)}>Join</button>
                     </div>
                   </div>
+                  )
+                  
                 ))}
               </div>
             </div>

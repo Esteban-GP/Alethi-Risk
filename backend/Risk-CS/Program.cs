@@ -25,6 +25,7 @@ builder.Services.AddCors(options =>
                 return origin.StartsWith("http://localhost")
                     || origin.StartsWith("http://127.0.0.1")
                     || origin.StartsWith("http://192.168.")
+                    || origin.Contains("http://192.168.4.30:5173")
                     || origin.StartsWith("http://10.");
             })
             .AllowAnyHeader()

@@ -115,7 +115,7 @@ namespace Risk_CS.Controllers
         }
 
 
-        [HttpPost("placeTroops/{ownerGuid}")]
+        [HttpPost("place/{ownerGuid}")]
         public async Task<ActionResult<Game>> PlaceTroops(List<PlacementDTO> placementList, Guid ownerGuid)
         {
             Game game = await _gameService.PlaceTroops(ownerGuid, placementList);
@@ -128,7 +128,7 @@ namespace Risk_CS.Controllers
         }
         
 
-        [HttpPost("moveTroops/{ownerGuid}")]
+        [HttpPost("move/{ownerGuid}")]
         public async Task<ActionResult<Game>> MoveTroops(MovementDTO movement, Guid ownerGuid)
         {
             Game game = await _gameService.MoveTroops(ownerGuid, movement);
@@ -141,7 +141,7 @@ namespace Risk_CS.Controllers
         }
 
 
-        [HttpPost("finishMove/{ownerGuid}")]
+        [HttpPost("move/finish/{ownerGuid}")]
         public async Task<ActionResult<Game>> FinishMoving(Guid ownerGuid)
         {
             Game game = await _gameService.FinishMoving(ownerGuid);

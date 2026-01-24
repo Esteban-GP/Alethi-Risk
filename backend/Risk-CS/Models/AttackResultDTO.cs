@@ -8,7 +8,7 @@
         public List<int> DefenderDice { get; set; }
 
         public int AttackerLost { get; set; }
-        public int DeffenderLost { get; set; }
+        public int DefenderLost { get; set; }
 
         public Guid AttackingPrincedomId { get; set; }
         public Guid DefendingPrincedomId { get; set; }
