@@ -1,7 +1,7 @@
 import { useGame } from "../context/GameContext";
 import { GiCrossedSwords, GiCrenulatedShield, } from "react-icons/gi";
 import { IoThunderstormSharp } from "react-icons/io5";
-import pergamino from "../assets/pergamino.png"
+
 
 function ActionModal() {
     const { game, leaveGame, sendPlacements, mapData, attackSelection, sendAttack, finishAttack, troopsMoving, sendMove, finishMoving, leaveCurrentGame } = useGame();

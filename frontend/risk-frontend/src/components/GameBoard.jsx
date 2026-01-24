@@ -13,7 +13,7 @@ import { ImArrowUp } from "react-icons/im";
 import { IoMdExit } from "react-icons/io";
 function GameBoard() {
     const { game, leaveGame, sendPlacements, mapData, attackSelection, sendAttack, finishAttack, troopsMoving, sendMove, finishMoving, leaveCurrentGame } = useGame();
-    const API_URL = "http://192.168.4.30:5282";
+    const API_URL = "http://localhost:5282";
     const playerID = localStorage.getItem("myPlayerId")
 
     const sourceTerritory = mapData.find(t => t.id === attackSelection.sourceId);

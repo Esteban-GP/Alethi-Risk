@@ -15,7 +15,7 @@ function GameHub() {
   const [join, setJoin] = useState(false)
   const [create, setCreate] = useState(false)
 
-  const API_URL = "http://192.168.4.30:5282"; 
+  const API_URL = "http://localhost:5282"; 
 
   useEffect(() => {
     refreshGames();
