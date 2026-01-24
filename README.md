@@ -22,6 +22,11 @@ A diferencia de las versiones clásicas de navegador, este juego utiliza **WebSo
 
 ---
 
+▶️ **Ver video en YouTube**  
+[![Demo](https://img.youtube.com/vi/n51jqkmD_Io/hqdefault.jpg)](https://www.youtube.com/watch?v=n51jqkmD_Io)
+
+---
+
 ## 🛠️ Tech Stack
 
 El proyecto está construido utilizando una arquitectura moderna de cliente-servidor separada.
